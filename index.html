@@ -139,45 +139,59 @@
     </div>
 </div>
 
-<!-- 資料管理 Modal -->
+<!-- 資料管理 Modal (全新 UI) -->
 <div id="data-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-md md:max-w-xl rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100 overflow-y-auto max-h-[90vh]" id="data-modal-content">
+    <div class="bg-white w-full max-w-md md:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-8 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100 overflow-y-auto max-h-[90vh]" id="data-modal-content">
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
         <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-black text-slate-800">資料管理</h3>
-            <button onclick="closeModal('data-modal', 'data-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+            <button onclick="closeModal('data-modal', 'data-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors">
                 <i class="ph ph-x font-bold"></i>
             </button>
         </div>
         
-        <div class="space-y-4">
+        <div class="space-y-6">
             
-            <!-- 增量更新模組 -->
-            <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <h4 class="font-bold text-blue-800 mb-2">📥 增量匯入 (貼上 Markdown 表格)</h4>
-                <p class="text-xs text-blue-600 mb-3 leading-relaxed">請貼上從 Gemini 產生的表格。系統會自動比對：<br><strong>✅ 新資料直接加入 🔄 舊資料自動覆蓋更新</strong>，絕不洗掉歷史紀錄。</p>
-                <textarea id="import-text" rows="4" class="w-full p-3 text-sm border border-blue-200 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-blue-300 shadow-inner font-mono" placeholder="| 日期 / 餐別 | 進食情境 | 實際飲食內容 |..."></textarea>
-                <button onclick="handleTextImport()" class="w-full py-3 bg-white border border-blue-200 text-blue-700 font-bold rounded-lg hover:bg-blue-100 transition text-sm flex items-center justify-center gap-2 shadow-sm">
-                    <i class="ph-fill ph-arrows-merge"></i> 執行增量匯入
+            <!-- 核心功能區：增量更新 -->
+            <div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <i class="ph-fill ph-magic-wand text-indigo-500 text-lg"></i>
+                    <h4 class="font-bold text-slate-800">AI 紀錄同步</h4>
+                </div>
+                <p class="text-xs text-slate-500 mb-3 leading-relaxed">貼上 Gemini 產出的 Markdown 表格，系統將自動比對並增量更新，不影響既有歷史資料。</p>
+                <textarea id="import-text" rows="4" class="w-full p-4 text-sm bg-slate-50 border border-slate-200 rounded-xl mb-3 focus:ring-2 focus:ring-slate-900 outline-none placeholder:text-slate-400 transition-all resize-none" placeholder="在此貼上表格內容..."></textarea>
+                <button onclick="handleTextImport()" class="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2">
+                    執行同步更新
                 </button>
             </div>
 
-            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <h4 class="font-bold text-slate-800 mb-2">📦 資料備份 (JSON)</h4>
-                <div class="grid grid-cols-2 gap-3 mt-3">
-                    <button onclick="exportData()" class="py-3 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 transition text-sm shadow-sm">
-                        匯出備份檔
+            <hr class="border-slate-100">
+
+            <!-- 次要功能區：備份與還原 -->
+            <div>
+                <h4 class="text-[11px] font-bold text-slate-400 mb-3 tracking-widest uppercase">進階選項</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="exportData()" class="py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm flex justify-center items-center gap-1.5 shadow-sm">
+                        <i class="ph ph-download-simple"></i> 匯出備份
                     </button>
                     <input type="file" id="json-upload" accept=".json" class="hidden" onchange="handleJSONImport(event)">
-                    <button onclick="document.getElementById('json-upload').click()" class="py-3 bg-white border border-slate-300 text-slate-700 font-bold rounded-lg hover:bg-slate-100 transition text-sm shadow-sm">
-                        還原備份
+                    <button onclick="document.getElementById('json-upload').click()" class="py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm flex justify-center items-center gap-1.5 shadow-sm">
+                        <i class="ph ph-upload-simple"></i> 還原備份
                     </button>
                 </div>
+                
+                <!-- 邊緣功能區：幽靈按鈕設計 -->
+                <div class="mt-4 flex gap-3">
+                     <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="handleSpecificCSVImport(event)">
+                     <button onclick="document.getElementById('csv-upload').click()" class="flex-1 py-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors text-xs font-medium text-center">
+                         匯入舊版 CSV 檔
+                     </button>
+                     <button onclick="clearAllData()" class="flex-1 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium text-center">
+                         清空所有資料
+                     </button>
+                </div>
             </div>
-            
-            <button onclick="clearAllData()" class="w-full py-3 mt-4 text-red-500 font-bold rounded-lg hover:bg-red-50 transition text-sm">
-                清除所有資料 (歸零)
-            </button>
+
         </div>
     </div>
 </div>
@@ -217,12 +231,10 @@
         const lines = text.split('\n');
 
         lines.forEach(line => {
-            // 清理 Markdown 表格前後的 |
             let cleanLine = line.trim();
             if (cleanLine.startsWith('|')) cleanLine = cleanLine.substring(1);
             if (cleanLine.endsWith('|')) cleanLine = cleanLine.substring(0, cleanLine.length - 1);
             
-            // 優先支援 Markdown 表格 (| 分隔)，若無則降級使用逗號
             let row = [];
             if (cleanLine.includes('|')) {
                 row = cleanLine.split('|').map(s => s.trim());
@@ -233,7 +245,6 @@
 
             if (row.length < 3) return; 
 
-            // 尋找 YYYY/MM/DD
             const dateMatch = row[0].match(/(\d{4}\/\d{2}\/\d{2})/);
             if (dateMatch) {
                 const dateStr = dateMatch[1].replace(/\//g, '-');
@@ -266,13 +277,12 @@
                     timestamp: timestamp
                 };
 
-                // 核心：比對「日期」與「餐別」，存在則更新，不存在則新增
                 const existingIndex = state.entries.findIndex(e => 
                     e.timestamp.startsWith(dateStr) && e.category === category
                 );
 
                 if (existingIndex !== -1) {
-                    newEntry.id = state.entries[existingIndex].id; // 保留原始 ID
+                    newEntry.id = state.entries[existingIndex].id;
                     state.entries[existingIndex] = newEntry;
                     updatedCount++;
                 } else {
@@ -288,6 +298,86 @@
             location.reload();
         } else {
             alert('沒有讀取到有效資料，請確保貼上的是完整的 Markdown 表格或包含日期的資料。');
+        }
+    }
+
+    // --- 客製化 CSV 檔案解析邏輯 ---
+    function handleSpecificCSVImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const validLines = text.split('\n').filter(line => line.trim().match(/^\d{4}\/\d{2}\/\d{2}/));
+            if (validLines.length === 0) {
+                alert('找不到符合格式的紀錄，請確認 CSV 內容。');
+                return;
+            }
+            Papa.parse(validLines.join('\n'), {
+                complete: function(results) {
+                    processParsedDataCSVMode(results.data);
+                }
+            });
+        };
+        reader.readAsText(file);
+    }
+
+    function processParsedDataCSVMode(dataRows) {
+        let count = 0;
+        let newEntries = []; 
+        
+        dataRows.forEach(row => {
+            if (!row[0] || typeof row[0] !== 'string') return;
+            const dateMatch = row[0].match(/(\d{4}\/\d{2}\/\d{2})/);
+            
+            if (dateMatch) {
+                const dateStr = dateMatch[1].replace(/\//g, '-');
+                const fullDateString = row[0];
+                
+                let category = '點心/其他';
+                let timeStr = '15:00';
+                
+                if (fullDateString.includes('早')) { category = '早餐'; timeStr = '08:00'; }
+                else if (fullDateString.includes('午餐')) { category = '午餐'; timeStr = '12:30'; }
+                else if (fullDateString.includes('晚餐')) { category = '晚餐'; timeStr = '19:00'; }
+                else if (fullDateString.includes('宵夜')) { category = '宵夜'; timeStr = '23:00'; }
+                
+                const timestamp = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+                
+                const context = row[1] ? row[1].trim() : '';
+                const content = row[2] ? row[2].trim() : '未紀錄內容';
+                const analysis = row[3] ? row[3].trim() : '';
+                const advice = row[4] ? row[4].trim() : '';
+                
+                if (content.includes('水') && !content.includes('餃') && !content.includes('果')) {
+                     newEntries.push({
+                        id: 'import_' + Date.now() + Math.random(),
+                        type: 'water', title: content, amount: 250, timestamp: timestamp
+                    });
+                } else {
+                    newEntries.push({
+                        id: 'import_' + Date.now() + Math.random(),
+                        type: 'meal', 
+                        category: category, 
+                        title: content, 
+                        context: context, 
+                        analysis: analysis, 
+                        advice: advice, 
+                        timestamp: timestamp
+                    });
+                }
+                count++;
+            }
+        });
+        
+        if (count > 0) {
+            state.entries = newEntries;
+            saveData();
+            alert(`成功過濾並匯入 ${count} 筆紀錄！(舊資料已自動清除)`);
+            location.reload();
+        } else {
+            alert('沒有讀取到有效資料，請檢查貼上的內容格式。');
         }
     }
 
@@ -454,3 +544,5 @@
 </script>
 </body>
 </html>
+
+
