@@ -25,91 +25,98 @@
         }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 antialiased">
 
-<div class="max-w-md mx-auto min-h-screen bg-white shadow-xl relative pb-28">
+<!-- 主要容器：最大寬度放寬至 6xl，加入 Flex 雙欄設定 -->
+<div class="max-w-6xl mx-auto min-h-screen relative md:p-6 lg:p-8 flex flex-col md:flex-row gap-6 lg:gap-10 pb-28 md:pb-8">
     
-    <!-- 頂部儀表板 -->
-    <header class="pt-12 pb-8 px-6 bg-slate-900 text-white rounded-b-[2rem] shadow-lg relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full bg-slate-800 opacity-50 blur-2xl"></div>
+    <!-- 左側欄：儀表板與操作區 (電腦版 Sticky 固定) -->
+    <div class="w-full md:w-80 lg:w-[400px] flex-shrink-0 md:sticky md:top-8 h-fit space-y-6">
         
-        <div class="relative z-10">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h1 class="text-2xl font-bold tracking-wide mb-1">今日概況</h1>
-                    <p class="text-slate-400 text-sm font-medium" id="current-date">載入中...</p>
-                </div>
-                <!-- 資料管理按鈕 -->
-                <button onclick="openDataModal()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition">
-                    <i class="ph-fill ph-gear text-slate-300 text-xl"></i>
-                </button>
-            </div>
+        <!-- 頂部儀表板 -->
+        <header class="pt-12 pb-8 px-6 bg-slate-900 text-white rounded-b-[2rem] md:rounded-[2rem] shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full bg-slate-800 opacity-50 blur-2xl"></div>
             
-            <div class="mt-8 flex justify-between items-end">
-                <div>
-                    <p class="text-sm text-slate-400 mb-1 font-medium">追蹤重點</p>
-                    <div class="flex items-baseline gap-1 mt-1">
-                        <span class="text-xl font-bold tracking-tight text-white">控制碳水、留意脂肪肝</span>
+            <div class="relative z-10">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-wide mb-1">今日概況</h1>
+                        <p class="text-slate-400 text-sm font-medium" id="current-date">載入中...</p>
+                    </div>
+                    <!-- 資料管理按鈕 -->
+                    <button onclick="openDataModal()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition">
+                        <i class="ph-fill ph-gear text-slate-300 text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mt-8 flex justify-between items-end">
+                    <div>
+                        <p class="text-sm text-slate-400 mb-1 font-medium">追蹤重點</p>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span class="text-xl font-bold tracking-tight text-white leading-tight">控制碳水、留意脂肪肝</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 水分進度條 -->
+                <div class="mt-6 bg-slate-800/50 rounded-2xl p-4 backdrop-blur-sm border border-slate-700/50">
+                    <div class="flex justify-between text-sm mb-3">
+                        <span class="flex items-center gap-2 font-medium">
+                            <div class="p-1 bg-blue-500/20 rounded-md">
+                                <i class="ph-fill ph-drop text-blue-400"></i>
+                            </div>
+                            水分目標
+                        </span>
+                        <span id="water-text" class="text-slate-300 font-medium">0 / 2000 ml</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-3 inner-shadow">
+                        <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-3 rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(56,189,248,0.4)]" id="water-bar" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
+        </header>
 
-            <!-- 水分進度條 (保留作為日常快速互動) -->
-            <div class="mt-6 bg-slate-800/50 rounded-2xl p-4 backdrop-blur-sm border border-slate-700/50">
-                <div class="flex justify-between text-sm mb-3">
-                    <span class="flex items-center gap-2 font-medium">
-                        <div class="p-1 bg-blue-500/20 rounded-md">
-                            <i class="ph-fill ph-drop text-blue-400"></i>
-                        </div>
-                        水分目標
-                    </span>
-                    <span id="water-text" class="text-slate-300 font-medium">0 / 2000 ml</span>
-                </div>
-                <div class="w-full bg-slate-900 rounded-full h-3 inner-shadow">
-                    <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-3 rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(56,189,248,0.4)]" id="water-bar" style="width: 0%"></div>
-                </div>
+        <!-- 快速紀錄區 -->
+        <div class="px-6 py-2 md:px-0 md:bg-transparent">
+            <h2 class="text-xs font-bold text-slate-400 mb-4 tracking-widest uppercase md:px-2">快速紀錄</h2>
+            <div class="grid grid-cols-4 md:grid-cols-2 gap-3">
+                <button onclick="openModal('meal', '早餐')" class="group flex flex-col items-center justify-center py-4 bg-orange-50 rounded-2xl text-orange-600 hover:bg-orange-100 transition-colors active:scale-95 border border-orange-100 shadow-sm">
+                    <i class="ph-fill ph-coffee text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-xs font-bold md:text-sm">早餐</span>
+                </button>
+                <button onclick="openModal('meal', '午餐')" class="group flex flex-col items-center justify-center py-4 bg-emerald-50 rounded-2xl text-emerald-600 hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-100 shadow-sm">
+                    <i class="ph-fill ph-hamburger text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-xs font-bold md:text-sm">午餐</span>
+                </button>
+                <button onclick="openModal('meal', '晚餐')" class="group flex flex-col items-center justify-center py-4 bg-indigo-50 rounded-2xl text-indigo-600 hover:bg-indigo-100 transition-colors active:scale-95 border border-indigo-100 shadow-sm">
+                    <i class="ph-fill ph-bowl-food text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-xs font-bold md:text-sm">晚餐</span>
+                </button>
+                <button onclick="addWater()" class="group flex flex-col items-center justify-center py-4 bg-blue-50 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors active:scale-95 border border-blue-100 shadow-sm">
+                    <i class="ph-fill ph-drop text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-xs font-bold md:text-sm">+250ml</span>
+                </button>
             </div>
-        </div>
-    </header>
-
-    <!-- 快速紀錄區 -->
-    <div class="px-6 py-8">
-        <h2 class="text-xs font-bold text-slate-400 mb-4 tracking-widest uppercase">快速紀錄</h2>
-        <div class="grid grid-cols-4 gap-3">
-            <button onclick="openModal('meal', '早餐')" class="group flex flex-col items-center justify-center py-4 bg-orange-50 rounded-2xl text-orange-600 hover:bg-orange-100 transition-colors active:scale-95 border border-orange-100">
-                <i class="ph-fill ph-coffee text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                <span class="text-xs font-bold">早餐</span>
-            </button>
-            <button onclick="openModal('meal', '午餐')" class="group flex flex-col items-center justify-center py-4 bg-emerald-50 rounded-2xl text-emerald-600 hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-100">
-                <i class="ph-fill ph-hamburger text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                <span class="text-xs font-bold">午餐</span>
-            </button>
-            <button onclick="openModal('meal', '晚餐')" class="group flex flex-col items-center justify-center py-4 bg-indigo-50 rounded-2xl text-indigo-600 hover:bg-indigo-100 transition-colors active:scale-95 border border-indigo-100">
-                <i class="ph-fill ph-bowl-food text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                <span class="text-xs font-bold">晚餐</span>
-            </button>
-            <button onclick="addWater()" class="group flex flex-col items-center justify-center py-4 bg-blue-50 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors active:scale-95 border border-blue-100">
-                <i class="ph-fill ph-drop text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                <span class="text-xs font-bold">+250ml</span>
-            </button>
         </div>
     </div>
 
-    <!-- 歷史時間軸 -->
-    <div class="px-6 pb-6">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xs font-bold text-slate-400 tracking-widest uppercase">今日時間軸</h2>
-            <!-- 簡單的日期切換提示，實務上可串接日曆套件 -->
-            <span class="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded-md">僅顯示本日</span>
+    <!-- 右側欄：歷史時間軸主內容區 -->
+    <div class="flex-1 w-full px-6 md:px-8 md:py-8 md:bg-white md:rounded-[2rem] md:shadow-sm md:border md:border-slate-100 min-h-[80vh]">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xs font-bold text-slate-400 tracking-widest uppercase">時間軸紀錄</h2>
+            <span class="text-xs text-slate-400 font-medium bg-slate-100 px-3 py-1.5 rounded-md">僅顯示本日</span>
         </div>
         <div id="timeline-container" class="space-y-4">
             <!-- 內容由 JS 動態生成 -->
         </div>
     </div>
 
-    <div class="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-white via-white to-transparent h-24 pointer-events-none z-10"></div>
-    <button onclick="openModal('meal', '宵夜/其他')" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-slate-900 text-white rounded-full shadow-[0_8px_20px_rgba(15,23,42,0.3)] flex items-center justify-center hover:bg-slate-800 transition-all active:scale-90 z-20 hover:shadow-lg">
-        <i class="ph ph-plus text-2xl font-bold"></i>
+    <!-- 底部漸層遮罩 (僅手機版顯示，避免內容被懸浮按鈕擋住) -->
+    <div class="fixed bottom-0 w-full md:hidden bg-gradient-to-t from-[#f8fafc] via-[#f8fafc] to-transparent h-24 pointer-events-none z-10"></div>
+    
+    <!-- 懸浮新增按鈕 (改至右下角，符合電腦與手機的通用人因工學) -->
+    <button onclick="openModal('meal', '宵夜/其他')" class="fixed bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-16 md:h-16 bg-slate-900 text-white rounded-full shadow-[0_8px_20px_rgba(15,23,42,0.3)] flex items-center justify-center hover:bg-slate-800 transition-all active:scale-90 z-20 hover:shadow-lg">
+        <i class="ph ph-plus text-2xl md:text-3xl font-bold"></i>
     </button>
 </div>
 
@@ -143,7 +150,7 @@
 
 <!-- 資料管理視窗 (匯入/匯出) -->
 <div id="data-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100" id="data-modal-content">
+    <div class="bg-white w-full max-w-md md:max-w-xl rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100 overflow-y-auto max-h-[90vh]" id="data-modal-content">
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
         <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-black text-slate-800">資料管理</h3>
@@ -153,24 +160,37 @@
         </div>
         
         <div class="space-y-4">
-            <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <h4 class="font-bold text-blue-800 mb-2">1. 匯入舊紀錄 (CSV)</h4>
-                <p class="text-xs text-blue-600 mb-3 leading-relaxed">請將你原本的「專屬飲食與代謝追蹤總表」直接下載為 CSV 並上傳。系統會自動略過表頭，精準抓取日期與分析建議。</p>
+            
+            <!-- 1. 舊資料 CSV 匯入 -->
+            <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                <h4 class="font-bold text-indigo-800 mb-2">1. 匯入舊紀錄 (CSV 檔案)</h4>
+                <p class="text-xs text-indigo-600 mb-3 leading-relaxed">請將你原本的「專屬飲食與代謝追蹤總表」下載為 CSV 並上傳。</p>
                 <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="handleSpecificCSVImport(event)">
-                <button onclick="document.getElementById('csv-upload').click()" class="w-full py-3 bg-white border border-blue-200 text-blue-700 font-bold rounded-lg hover:bg-blue-100 transition text-sm flex items-center justify-center gap-2">
+                <button onclick="document.getElementById('csv-upload').click()" class="w-full py-3 bg-white border border-indigo-200 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition text-sm flex items-center justify-center gap-2 shadow-sm">
                     <i class="ph-fill ph-upload-simple"></i> 選擇 CSV 檔案並匯入
                 </button>
             </div>
 
+            <!-- 2. 快速貼上匯入 -->
+            <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <h4 class="font-bold text-blue-800 mb-2">2. 快速貼上匯入 (免檔案)</h4>
+                <p class="text-xs text-blue-600 mb-3 leading-relaxed">直接將對話框產出的多筆資料文字複製，貼在下方框內。</p>
+                <textarea id="import-text" rows="4" class="w-full p-3 text-sm border border-blue-200 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-blue-300 shadow-inner" placeholder="在此貼上文字資料..."></textarea>
+                <button onclick="handleTextImport()" class="w-full py-3 bg-white border border-blue-200 text-blue-700 font-bold rounded-lg hover:bg-blue-100 transition text-sm flex items-center justify-center gap-2 shadow-sm">
+                    <i class="ph-fill ph-clipboard-text"></i> 點擊匯入
+                </button>
+            </div>
+
+            <!-- 3. 資料備份 -->
             <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <h4 class="font-bold text-slate-800 mb-2">2. 資料備份 (JSON)</h4>
+                <h4 class="font-bold text-slate-800 mb-2">3. 資料備份 (JSON)</h4>
                 <p class="text-xs text-slate-500 mb-3 leading-relaxed">下載目前的全部紀錄，供日後換手機或換電腦時還原。</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="exportData()" class="py-3 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 transition text-sm">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="exportData()" class="py-3 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 transition text-sm shadow-sm">
                         匯出備份檔
                     </button>
                     <input type="file" id="json-upload" accept=".json" class="hidden" onchange="handleJSONImport(event)">
-                    <button onclick="document.getElementById('json-upload').click()" class="py-3 bg-white border border-slate-300 text-slate-700 font-bold rounded-lg hover:bg-slate-100 transition text-sm">
+                    <button onclick="document.getElementById('json-upload').click()" class="py-3 bg-white border border-slate-300 text-slate-700 font-bold rounded-lg hover:bg-slate-100 transition text-sm shadow-sm">
                         還原備份
                     </button>
                 </div>
@@ -185,7 +205,6 @@
 
 <script>
     let state = {
-        // 使用新的 key 避免與之前測試資料衝突
         entries: JSON.parse(localStorage.getItem('diet_entries_v3')) || []
     };
     const DAILY_WATER_GOAL = 2000;
@@ -206,70 +225,88 @@
         setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }, 10);
     }
 
-    // --- 客製化 CSV 解析邏輯 (專為使用者的總表設計) ---
+    // --- 客製化 CSV 解析邏輯 ---
     function handleSpecificCSVImport(event) {
         const file = event.target.files[0];
         if (!file) return;
         
         Papa.parse(file, {
             complete: function(results) {
-                let count = 0;
-                
-                results.data.forEach(row => {
-                    // 防呆：確保該列有資料，且第一欄是字串
-                    if (!row[0] || typeof row[0] !== 'string') return;
-                    
-                    // 核心邏輯：用正則表達式尋找以日期開頭的列 (例如 "2026/07/24 (五) 宵夜")
-                    const dateMatch = row[0].match(/^(\d{4}\/\d{2}\/\d{2})/);
-                    
-                    if (dateMatch) {
-                        const dateStr = dateMatch[1].replace(/\//g, '-'); // 轉成 YYYY-MM-DD
-                        const fullDateString = row[0];
-                        
-                        // 判斷餐別與給予預設排序時間
-                        let category = '點心/其他';
-                        let timeStr = '15:00'; // 預設下午
-                        
-                        if (fullDateString.includes('早')) { category = '早餐'; timeStr = '08:00'; }
-                        else if (fullDateString.includes('午餐')) { category = '午餐'; timeStr = '12:30'; }
-                        else if (fullDateString.includes('晚餐')) { category = '晚餐'; timeStr = '19:00'; }
-                        else if (fullDateString.includes('宵夜')) { category = '宵夜'; timeStr = '23:00'; }
-                        
-                        const timestamp = new Date(`${dateStr}T${timeStr}:00`).toISOString();
-                        
-                        // 抓取其他欄位 (依照使用者表格結構)
-                        const context = row[1] ? row[1].trim() : ''; // 情境
-                        const content = row[2] ? row[2].trim() : '未紀錄內容'; // 內容
-                        const analysis = row[3] ? row[3].trim() : ''; // 代謝衝擊分析
-                        const advice = row[4] ? row[4].trim() : ''; // 修正建議
-                        
-                        // 若是單純喝水
-                        if (content.includes('水') && !content.includes('餃') && !content.includes('果')) {
-                             state.entries.push({
-                                id: 'csv_' + Date.now() + Math.random(),
-                                type: 'water', title: content, amount: 250, timestamp: timestamp
-                            });
-                        } else {
-                            state.entries.push({
-                                id: 'csv_' + Date.now() + Math.random(),
-                                type: 'meal', 
-                                category: category, 
-                                title: content, 
-                                context: context, // 存入情境
-                                analysis: analysis, // 存入分析
-                                advice: advice, // 存入建議
-                                timestamp: timestamp
-                            });
-                        }
-                        count++;
-                    }
-                });
-                
-                saveData();
-                alert(`成功讀取並匯入 ${count} 筆紀錄！`);
-                location.reload();
+                processParsedData(results.data);
             }
         });
+    }
+
+    // --- 客製化文字解析邏輯 (免 CSV 檔案) ---
+    function handleTextImport() {
+        const text = document.getElementById('import-text').value;
+        if (!text.trim()) {
+            alert('請先貼上資料。');
+            return;
+        }
+        
+        Papa.parse(text, {
+            complete: function(results) {
+                processParsedData(results.data);
+            }
+        });
+    }
+
+    // --- 抽離共用的資料處理邏輯 ---
+    function processParsedData(dataRows) {
+        let count = 0;
+        
+        dataRows.forEach(row => {
+            // 防呆：確保該列有資料，且第一欄是字串
+            if (!row[0] || typeof row[0] !== 'string') return;
+            
+            // 核心邏輯：用正則表達式尋找以日期開頭的列
+            const dateMatch = row[0].match(/^(\d{4}\/\d{2}\/\d{2})/);
+            
+            if (dateMatch) {
+                const dateStr = dateMatch[1].replace(/\//g, '-');
+                const fullDateString = row[0];
+                
+                let category = '點心/其他';
+                let timeStr = '15:00';
+                
+                if (fullDateString.includes('早')) { category = '早餐'; timeStr = '08:00'; }
+                else if (fullDateString.includes('午餐')) { category = '午餐'; timeStr = '12:30'; }
+                else if (fullDateString.includes('晚餐')) { category = '晚餐'; timeStr = '19:00'; }
+                else if (fullDateString.includes('宵夜')) { category = '宵夜'; timeStr = '23:00'; }
+                
+                const timestamp = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+                
+                const context = row[1] ? row[1].trim() : '';
+                const content = row[2] ? row[2].trim() : '未紀錄內容';
+                const analysis = row[3] ? row[3].trim() : '';
+                const advice = row[4] ? row[4].trim() : '';
+                
+                // 若是單純喝水
+                if (content.includes('水') && !content.includes('餃') && !content.includes('果')) {
+                     state.entries.push({
+                        id: 'import_' + Date.now() + Math.random(),
+                        type: 'water', title: content, amount: 250, timestamp: timestamp
+                    });
+                } else {
+                    state.entries.push({
+                        id: 'import_' + Date.now() + Math.random(),
+                        type: 'meal', 
+                        category: category, 
+                        title: content, 
+                        context: context, 
+                        analysis: analysis, 
+                        advice: advice, 
+                        timestamp: timestamp
+                    });
+                }
+                count++;
+            }
+        });
+        
+        saveData();
+        alert(`成功讀取並匯入 ${count} 筆紀錄！`);
+        location.reload();
     }
 
     function exportData() {
@@ -365,11 +402,10 @@
 
     function renderTimeline() {
         const container = document.getElementById('timeline-container');
-        // 為了展示匯入資料，這裡暫時改為顯示「全部紀錄」並以日期分組，實務上可做日期切換
         const sortedEntries = [...state.entries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         if (sortedEntries.length === 0) {
-            container.innerHTML = `<div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200"><i class="ph ph-note-blank text-4xl text-slate-300 mb-2"></i><p class="text-sm text-slate-400 font-medium">尚無紀錄，點擊右上角齒輪匯入舊資料</p></div>`;
+            container.innerHTML = `<div class="text-center py-12 bg-slate-50 md:bg-white rounded-2xl border border-dashed border-slate-200"><i class="ph ph-note-blank text-4xl text-slate-300 mb-2"></i><p class="text-sm text-slate-400 font-medium">尚無紀錄，點擊左上角齒輪匯入資料</p></div>`;
             return;
         }
 
@@ -379,9 +415,8 @@
         sortedEntries.forEach((entry, index) => {
             const entryDate = new Date(entry.timestamp).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
             
-            // 遇到新的一天，加入日期分隔線
             if (entryDate !== currentRenderedDate) {
-                htmlContent += `<div class="pt-4 pb-2"><span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">${entryDate}</span></div>`;
+                htmlContent += `<div class="pt-6 pb-3"><span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full shadow-sm">${entryDate}</span></div>`;
                 currentRenderedDate = entryDate;
             }
 
@@ -389,25 +424,24 @@
             const animClass = index === 0 ? 'animate-slide-up' : '';
             
             if (entry.type === 'water') {
-                htmlContent += `<div class="flex items-start gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm relative group mb-3 ${animClass}"><div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-500"><i class="ph-fill ph-drop text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">喝水</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-blue-600 text-sm font-bold mt-1">+${entry.amount} ml</p></div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-4 ${animClass}"><div class="w-12 h-12 rounded-xl bg-blue-100/50 flex items-center justify-center flex-shrink-0 text-blue-500"><i class="ph-fill ph-drop text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">喝水</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-blue-600 text-sm font-bold mt-1">+${entry.amount} ml</p></div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
             } else {
-                let icon = 'ph-bowl-food', iconColor = 'text-indigo-500', bgColor = 'bg-indigo-50';
-                if (entry.category === '早餐') { icon = 'ph-coffee'; iconColor = 'text-orange-500'; bgColor = 'bg-orange-50'; }
-                if (entry.category === '午餐') { icon = 'ph-hamburger'; iconColor = 'text-emerald-500'; bgColor = 'bg-emerald-50'; }
-                if (entry.category === '宵夜') { icon = 'ph-moon-stars'; iconColor = 'text-purple-500'; bgColor = 'bg-purple-50'; }
+                let icon = 'ph-bowl-food', iconColor = 'text-indigo-500', bgColor = 'bg-indigo-100/50';
+                if (entry.category === '早餐') { icon = 'ph-coffee'; iconColor = 'text-orange-500'; bgColor = 'bg-orange-100/50'; }
+                if (entry.category === '午餐') { icon = 'ph-hamburger'; iconColor = 'text-emerald-500'; bgColor = 'bg-emerald-100/50'; }
+                if (entry.category === '宵夜') { icon = 'ph-moon-stars'; iconColor = 'text-purple-500'; bgColor = 'bg-purple-100/50'; }
                 
-                const contextHtml = entry.context ? `<span class="inline-block mt-2 px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-bold tracking-wide border border-slate-200">📍 ${entry.context}</span>` : '';
+                const contextHtml = entry.context ? `<span class="inline-block mt-3 px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-md text-[11px] font-bold tracking-wide shadow-sm">📍 ${entry.context}</span>` : '';
                 
-                // 渲染從 CSV 讀進來的 AI 分析與建議區塊
                 let analysisHtml = '';
                 if (entry.analysis || entry.advice) {
-                    analysisHtml = `<div class="mt-3 p-3 bg-slate-50 rounded-xl border-l-4 border-indigo-400 text-sm space-y-2">`;
+                    analysisHtml = `<div class="mt-4 p-4 bg-white rounded-xl border-l-4 border-indigo-400 text-sm space-y-2 shadow-sm">`;
                     if (entry.analysis) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-indigo-600">衝擊分析：</strong>${entry.analysis}</p>`;
                     if (entry.advice) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-emerald-600">優化建議：</strong>${entry.advice}</p>`;
                     analysisHtml += `</div>`;
                 }
 
-                htmlContent += `<div class="flex items-start gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm relative group mb-3 ${animClass}"><div class="w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0 ${iconColor}"><i class="ph-fill ${icon} text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">${entry.category}</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-slate-900 font-bold leading-relaxed text-base">${entry.title}</p>${contextHtml}${analysisHtml}</div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-4 ${animClass} hover:shadow-md transition-shadow"><div class="w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0 ${iconColor}"><i class="ph-fill ${icon} text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">${entry.category}</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-slate-900 font-bold leading-relaxed text-base">${entry.title}</p>${contextHtml}${analysisHtml}</div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
             }
         });
         
