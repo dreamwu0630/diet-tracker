@@ -46,14 +46,14 @@
                 
                 <div class="mt-8 grid grid-cols-2 gap-4">
                     <div>
-                        <p class="text-sm text-slate-400 mb-1 font-medium">總熱量攝取</p>
+                        <p class="text-sm text-slate-400 mb-1 font-medium">今日總熱量</p>
                         <div class="flex items-baseline gap-1">
                             <span class="text-3xl font-bold tracking-tight text-white" id="total-cals">0</span>
                             <span class="text-xs text-slate-500 font-medium">kcal</span>
                         </div>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-400 mb-1 font-medium">總蛋白質</p>
+                        <p class="text-sm text-slate-400 mb-1 font-medium">今日總蛋白質</p>
                         <div class="flex items-baseline gap-1">
                             <span class="text-3xl font-bold tracking-tight text-emerald-400" id="total-protein">0</span>
                             <span class="text-xs text-slate-500 font-medium">g</span>
@@ -131,7 +131,6 @@
     <div class="flex-1 w-full px-6 md:px-8 md:py-8 md:bg-white md:rounded-[2rem] md:shadow-sm md:border md:border-slate-100 min-h-[80vh]">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xs font-bold text-slate-400 tracking-widest uppercase">時間軸紀錄</h2>
-            <span class="text-xs text-slate-400 font-medium bg-slate-100 px-3 py-1.5 rounded-md">全部紀錄</span>
         </div>
         <div id="timeline-container" class="space-y-4">
             </div>
@@ -271,29 +270,15 @@
 <script>
     let state = {
         entries: JSON.parse(localStorage.getItem('diet_entries_v4')) || [], 
-        scaleData: JSON.parse(localStorage.getItem('scale_entries_v2')) || [] // 更新版本號以避免舊資料結構衝突
+        scaleData: JSON.parse(localStorage.getItem('scale_entries_v2')) || [] 
     };
     const DAILY_WATER_GOAL = 2000;
 
     document.addEventListener('DOMContentLoaded', () => {
-        // 資料遷移防呆
         if(state.entries.length === 0 && localStorage.getItem('diet_entries_v3')) {
             state.entries = JSON.parse(localStorage.getItem('diet_entries_v3'));
             saveData();
         }
-        if(state.scaleData.length === 0 && localStorage.getItem('scale_entries_v1')) {
-            const oldData = JSON.parse(localStorage.getItem('scale_entries_v1'));
-            // 將舊版的 visceral 欄位值遷移到 waist
-            state.scaleData = oldData.map(d => ({
-                id: d.id,
-                date: d.date,
-                weight: d.weight,
-                fat: d.fat,
-                waist: d.visceral || d.waist || 0 
-            }));
-            localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
-        }
-
         updateDate(); 
         renderDashboard(); 
         renderTimeline();
@@ -305,7 +290,6 @@
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW', options);
     }
 
-    // --- 體態數據模組 ---
     function openScaleModal() {
         const m = document.getElementById('scale-modal');
         const c = document.getElementById('scale-modal-content');
@@ -367,7 +351,6 @@
         document.getElementById('scale-date').textContent = `最後更新：${dateObj.getMonth()+1}/${dateObj.getDate()}`;
     }
 
-    // --- 資料匯入模組 ---
     function openDataModal() {
         const m = document.getElementById('data-modal');
         const c = document.getElementById('data-modal-content');
@@ -568,54 +551,138 @@
 
     function renderTimeline() {
         const container = document.getElementById('timeline-container');
+        
+        // 將資料按時間由新到舊排序
         const sortedEntries = [...state.entries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         if (sortedEntries.length === 0) {
-            container.innerHTML = `<div class="text-center py-12 bg-slate-50 md:bg-white rounded-2xl border border-dashed border-slate-200"><i class="ph ph-note-blank text-4xl text-slate-300 mb-2"></i><p class="text-sm text-slate-400 font-medium">尚無紀錄，點擊左上角齒輪匯入資料</p></div>`;
+            container.innerHTML = `<div class="text-center py-12 bg-slate-50 md:bg-white rounded-2xl border border-dashed border-slate-200"><i class="ph ph-note-blank text-4xl text-slate-300 mb-2"></i><p class="text-sm text-slate-400 font-medium">尚無紀錄，點擊左下角齒輪匯入資料</p></div>`;
             return;
         }
 
-        let currentRenderedDate = ''; let htmlContent = '';
+        // 以週一為基準，產生當週的識別碼
+        function getWeekKey(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff)).getTime();
+        }
+
+        // 核心運算：按週與按日分組並加總
+        const weeks = new Map();
 
         sortedEntries.forEach((entry, index) => {
-            const entryDate = new Date(entry.timestamp).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
+            const entryDate = new Date(entry.timestamp);
+            const weekKey = getWeekKey(entryDate);
+            const dateStr = entryDate.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
             
-            if (entryDate !== currentRenderedDate) {
-                htmlContent += `<div class="pt-6 pb-3"><span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full shadow-sm">${entryDate}</span></div>`;
-                currentRenderedDate = entryDate;
+            if (!weeks.has(weekKey)) {
+                weeks.set(weekKey, { totalCals: 0, totalProtein: 0, days: new Map(), start: weekKey });
             }
-
-            const timeString = new Date(entry.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-            const animClass = index === 0 ? 'animate-slide-up' : '';
             
-            if (entry.type === 'water') {
-                htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-4 ${animClass}"><div class="w-12 h-12 rounded-xl bg-blue-100/50 flex items-center justify-center flex-shrink-0 text-blue-500"><i class="ph-fill ph-drop text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">喝水</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-blue-600 text-sm font-bold mt-1">+${entry.amount} ml</p></div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
-            } else {
-                let icon = 'ph-bowl-food', iconColor = 'text-indigo-500', bgColor = 'bg-indigo-100/50';
-                if (entry.category === '早餐') { icon = 'ph-coffee'; iconColor = 'text-orange-500'; bgColor = 'bg-orange-100/50'; }
-                if (entry.category === '午餐') { icon = 'ph-hamburger'; iconColor = 'text-emerald-500'; bgColor = 'bg-emerald-100/50'; }
-                if (entry.category === '宵夜') { icon = 'ph-moon-stars'; iconColor = 'text-purple-500'; bgColor = 'bg-purple-100/50'; }
-                
-                const contextHtml = entry.context ? `<span class="inline-block mt-3 mr-2 px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-md text-[11px] font-bold tracking-wide shadow-sm">📍 ${entry.context}</span>` : '';
-                
-                let nutritionHtml = '';
-                if (entry.calories > 0 || entry.protein > 0) {
-                    nutritionHtml += `<div class="inline-flex gap-2 mt-3 align-middle">`;
-                    if (entry.calories > 0) nutritionHtml += `<span class="px-2 py-1 bg-slate-800 text-white rounded-md text-[11px] font-bold tracking-wide shadow-sm">${entry.calories} kcal</span>`;
-                    if (entry.protein > 0) nutritionHtml += `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-md text-[11px] font-bold tracking-wide shadow-sm">${entry.protein}g 蛋白</span>`;
-                    nutritionHtml += `</div>`;
-                }
-                
-                let analysisHtml = '';
-                if (entry.analysis || entry.advice) {
-                    analysisHtml = `<div class="mt-4 p-4 bg-white rounded-xl border-l-4 border-indigo-400 text-sm space-y-2 shadow-sm">`;
-                    if (entry.analysis) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-indigo-600">衝擊分析：</strong>${entry.analysis}</p>`;
-                    if (entry.advice) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-emerald-600">優化建議：</strong>${entry.advice}</p>`;
-                    analysisHtml += `</div>`;
-                }
-
-                htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-4 ${animClass} hover:shadow-md transition-shadow"><div class="w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0 ${iconColor}"><i class="ph-fill ${icon} text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">${entry.category}</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-slate-900 font-bold leading-relaxed text-base">${entry.title}</p><div>${contextHtml}${nutritionHtml}</div>${analysisHtml}</div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+            const weekObj = weeks.get(weekKey);
+            
+            if (!weekObj.days.has(dateStr)) {
+                weekObj.days.set(dateStr, { cals: 0, protein: 0, entries: [] });
             }
+            
+            const dayObj = weekObj.days.get(dateStr);
+            dayObj.entries.push({ entry, index }); 
+            
+            if (entry.type === 'meal') {
+                const cals = parseInt(entry.calories) || 0;
+                const prot = parseInt(entry.protein) || 0;
+                weekObj.totalCals += cals;
+                weekObj.totalProtein += prot;
+                dayObj.cals += cals;
+                dayObj.protein += prot;
+            }
+        });
+
+        let htmlContent = '';
+
+        // 渲染畫面
+        Array.from(weeks.values()).sort((a, b) => b.start - a.start).forEach(week => {
+            
+            const startDate = new Date(week.start);
+            const endDate = new Date(week.start);
+            endDate.setDate(endDate.getDate() + 6);
+            const weekLabel = `${startDate.getMonth()+1}/${startDate.getDate()} - ${endDate.getMonth()+1}/${endDate.getDate()}`;
+            
+            // 1. 渲染當週結算總卡片
+            htmlContent += `
+            <div class="mb-4 mt-6 p-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-lg text-white relative overflow-hidden">
+                <div class="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 rounded-full bg-slate-700 opacity-50 blur-xl"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="ph-fill ph-calendar-check text-indigo-400 text-lg"></i>
+                            <h3 class="font-bold text-sm tracking-wide">當週累計</h3>
+                        </div>
+                        <span class="text-xs font-medium bg-slate-700/80 px-2 py-1 rounded-md text-slate-300">${weekLabel}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-slate-400 mb-1">熱量</p>
+                            <p class="text-2xl font-bold">${week.totalCals} <span class="text-xs font-normal text-slate-400">kcal</span></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 mb-1">蛋白質</p>
+                            <p class="text-2xl font-bold text-emerald-400">${week.totalProtein} <span class="text-xs font-normal text-slate-400">g</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            
+            // 2. 渲染每日細節
+            Array.from(week.days.entries()).forEach(([dateStr, day]) => {
+                
+                // 每日 Header (包含單日總計)
+                htmlContent += `
+                <div class="flex justify-between items-center pt-4 pb-3 mb-2 border-b border-slate-100">
+                    <span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full shadow-sm">${dateStr}</span>
+                    <div class="flex gap-3 text-[12px] font-bold">
+                        <span class="text-slate-700">${day.cals} <span class="text-[10px] font-normal text-slate-400">kcal</span></span>
+                        <span class="text-emerald-600">${day.protein} <span class="text-[10px] font-normal text-slate-400">g</span></span>
+                    </div>
+                </div>`;
+                
+                // 3. 渲染該日的單筆餐點
+                day.entries.forEach(({ entry, index }) => {
+                    const timeString = new Date(entry.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                    const animClass = index === 0 ? 'animate-slide-up' : '';
+                    
+                    if (entry.type === 'water') {
+                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3 ${animClass}"><div class="w-12 h-12 rounded-xl bg-blue-100/50 flex items-center justify-center flex-shrink-0 text-blue-500"><i class="ph-fill ph-drop text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">喝水</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-blue-600 text-sm font-bold mt-1">+${entry.amount} ml</p></div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                    } else {
+                        let icon = 'ph-bowl-food', iconColor = 'text-indigo-500', bgColor = 'bg-indigo-100/50';
+                        if (entry.category === '早餐') { icon = 'ph-coffee'; iconColor = 'text-orange-500'; bgColor = 'bg-orange-100/50'; }
+                        if (entry.category === '午餐') { icon = 'ph-hamburger'; iconColor = 'text-emerald-500'; bgColor = 'bg-emerald-100/50'; }
+                        if (entry.category === '宵夜') { icon = 'ph-moon-stars'; iconColor = 'text-purple-500'; bgColor = 'bg-purple-100/50'; }
+                        
+                        const contextHtml = entry.context ? `<span class="inline-block mt-3 mr-2 px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-md text-[11px] font-bold tracking-wide shadow-sm">📍 ${entry.context}</span>` : '';
+                        
+                        let nutritionHtml = '';
+                        if (entry.calories > 0 || entry.protein > 0) {
+                            nutritionHtml += `<div class="inline-flex gap-2 mt-3 align-middle">`;
+                            if (entry.calories > 0) nutritionHtml += `<span class="px-2 py-1 bg-slate-800 text-white rounded-md text-[11px] font-bold tracking-wide shadow-sm">${entry.calories} kcal</span>`;
+                            if (entry.protein > 0) nutritionHtml += `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-md text-[11px] font-bold tracking-wide shadow-sm">${entry.protein}g 蛋白</span>`;
+                            nutritionHtml += `</div>`;
+                        }
+                        
+                        let analysisHtml = '';
+                        if (entry.analysis || entry.advice) {
+                            analysisHtml = `<div class="mt-4 p-4 bg-white rounded-xl border-l-4 border-indigo-400 text-sm space-y-2 shadow-sm">`;
+                            if (entry.analysis) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-indigo-600">衝擊分析：</strong>${entry.analysis}</p>`;
+                            if (entry.advice) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-emerald-600">優化建議：</strong>${entry.advice}</p>`;
+                            analysisHtml += `</div>`;
+                        }
+
+                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3 hover:shadow-md transition-shadow ${animClass}"><div class="w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0 ${iconColor}"><i class="ph-fill ${icon} text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">${entry.category}</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-slate-900 font-bold leading-relaxed text-base">${entry.title}</p><div>${contextHtml}${nutritionHtml}</div>${analysisHtml}</div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                    }
+                });
+            });
         });
         
         container.innerHTML = htmlContent;
