@@ -82,8 +82,8 @@
                             <p class="font-bold text-lg" id="display-fat">-</p>
                         </div>
                         <div class="text-center">
-                            <p class="text-xs text-slate-400 mb-1">內臟脂肪</p>
-                            <p class="font-bold text-lg text-emerald-400" id="display-visceral">-</p>
+                            <p class="text-xs text-slate-400 mb-1">腰圍 (cm)</p>
+                            <p class="font-bold text-lg text-emerald-400" id="display-waist">-</p>
                         </div>
                     </div>
                 </div>
@@ -165,8 +165,8 @@
                 <input type="number" step="0.1" id="input-fat" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1.5">內臟脂肪 <span class="text-xs text-slate-400 font-normal">(核心指標)</span></label>
-                <input type="number" step="0.5" id="input-visceral" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">腰圍 (cm) <span class="text-xs text-slate-400 font-normal">(每週量測即可)</span></label>
+                <input type="number" step="0.1" id="input-waist" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
             </div>
             
             <button onclick="saveScaleData()" class="w-full bg-emerald-500 text-white font-bold rounded-xl px-4 py-4 mt-4 hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-md">
@@ -270,17 +270,30 @@
 
 <script>
     let state = {
-        entries: JSON.parse(localStorage.getItem('diet_entries_v4')) || [], // 升級版本號避免舊格式干擾
-        scaleData: JSON.parse(localStorage.getItem('scale_entries_v1')) || []
+        entries: JSON.parse(localStorage.getItem('diet_entries_v4')) || [], 
+        scaleData: JSON.parse(localStorage.getItem('scale_entries_v2')) || [] // 更新版本號以避免舊資料結構衝突
     };
     const DAILY_WATER_GOAL = 2000;
 
     document.addEventListener('DOMContentLoaded', () => {
-        // 若從 v3 升級，自動搬移資料
+        // 資料遷移防呆
         if(state.entries.length === 0 && localStorage.getItem('diet_entries_v3')) {
             state.entries = JSON.parse(localStorage.getItem('diet_entries_v3'));
             saveData();
         }
+        if(state.scaleData.length === 0 && localStorage.getItem('scale_entries_v1')) {
+            const oldData = JSON.parse(localStorage.getItem('scale_entries_v1'));
+            // 將舊版的 visceral 欄位值遷移到 waist
+            state.scaleData = oldData.map(d => ({
+                id: d.id,
+                date: d.date,
+                weight: d.weight,
+                fat: d.fat,
+                waist: d.visceral || d.waist || 0 
+            }));
+            localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
+        }
+
         updateDate(); 
         renderDashboard(); 
         renderTimeline();
@@ -301,11 +314,11 @@
             const latest = state.scaleData[0];
             document.getElementById('input-weight').value = latest.weight || '';
             document.getElementById('input-fat').value = latest.fat || '';
-            document.getElementById('input-visceral').value = latest.visceral || '';
+            document.getElementById('input-waist').value = latest.waist || '';
         } else {
             document.getElementById('input-weight').value = '';
             document.getElementById('input-fat').value = '';
-            document.getElementById('input-visceral').value = '';
+            document.getElementById('input-waist').value = '';
         }
 
         m.classList.remove('hidden');
@@ -315,9 +328,9 @@
     function saveScaleData() {
         const weight = parseFloat(document.getElementById('input-weight').value);
         const fat = parseFloat(document.getElementById('input-fat').value);
-        const visceral = parseFloat(document.getElementById('input-visceral').value);
+        const waist = parseFloat(document.getElementById('input-waist').value);
 
-        if (!weight && !fat && !visceral) {
+        if (!weight && !fat && !waist) {
             closeModal('scale-modal', 'scale-modal-content');
             return;
         }
@@ -327,7 +340,7 @@
             date: new Date().toISOString().split('T')[0],
             weight: weight || 0,
             fat: fat || 0,
-            visceral: visceral || 0
+            waist: waist || 0
         };
 
         const todayIndex = state.scaleData.findIndex(e => e.date === newScaleEntry.date);
@@ -337,7 +350,7 @@
             state.scaleData.unshift(newScaleEntry);
         }
 
-        localStorage.setItem('scale_entries_v1', JSON.stringify(state.scaleData));
+        localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
         closeModal('scale-modal', 'scale-modal-content');
         renderScaleData();
     }
@@ -348,13 +361,13 @@
         const latest = state.scaleData[0];
         document.getElementById('display-weight').textContent = latest.weight ? latest.weight : '-';
         document.getElementById('display-fat').textContent = latest.fat ? latest.fat + '%' : '-';
-        document.getElementById('display-visceral').textContent = latest.visceral ? latest.visceral : '-';
+        document.getElementById('display-waist').textContent = latest.waist ? latest.waist : '-';
         
         const dateObj = new Date(latest.date);
         document.getElementById('scale-date').textContent = `最後更新：${dateObj.getMonth()+1}/${dateObj.getDate()}`;
     }
 
-    // --- 資料匯入模組 (支援 7 欄架構) ---
+    // --- 資料匯入模組 ---
     function openDataModal() {
         const m = document.getElementById('data-modal');
         const c = document.getElementById('data-modal-content');
@@ -401,7 +414,6 @@
                 const context = row[1] || ''; 
                 const content = row[2] || '未紀錄內容';
                 
-                // 動態判定欄位數量 (相容舊版 5 欄位與新版 7 欄位)
                 let calories = 0, protein = 0, analysis = '', advice = '';
                 
                 if (row.length >= 7 && !isNaN(parseInt(row[3]))) {
@@ -410,7 +422,6 @@
                     analysis = row[5] || '';
                     advice = row[6] || '';
                 } else {
-                    // 舊版 5 欄位結構
                     analysis = row[3] || '';
                     advice = row[4] || '';
                 }
@@ -476,7 +487,7 @@
                     state.entries = importedData;
                 }
                 saveData();
-                localStorage.setItem('scale_entries_v1', JSON.stringify(state.scaleData));
+                localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
                 alert('備份還原成功！');
                 location.reload();
             } catch (err) { alert('檔案格式錯誤。'); }
@@ -487,7 +498,7 @@
     function clearAllData() {
         if(confirm('警告：確定要刪除所有紀錄嗎？此動作無法復原。')) {
             state.entries = []; state.scaleData = [];
-            saveData(); localStorage.removeItem('scale_entries_v1');
+            saveData(); localStorage.removeItem('scale_entries_v2');
             location.reload();
         }
     }
@@ -587,7 +598,6 @@
                 
                 const contextHtml = entry.context ? `<span class="inline-block mt-3 mr-2 px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-md text-[11px] font-bold tracking-wide shadow-sm">📍 ${entry.context}</span>` : '';
                 
-                // 營養數據標籤 (熱量與蛋白質)
                 let nutritionHtml = '';
                 if (entry.calories > 0 || entry.protein > 0) {
                     nutritionHtml += `<div class="inline-flex gap-2 mt-3 align-middle">`;
