@@ -7,6 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- 引入 Firebase 相容版 SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         body { 
             background-color: #f8fafc; 
@@ -40,7 +45,7 @@
                         <h1 class="text-2xl font-bold tracking-wide mb-1">今日概況</h1>
                         <p class="text-slate-400 text-sm font-medium" id="current-date">載入中...</p>
                     </div>
-                    <button onclick="window.openDataModal()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition">
+                    <button onclick="openDataModal()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition">
                         <i class="ph-fill ph-gear text-slate-300 text-xl"></i>
                     </button>
                 </div>
@@ -62,7 +67,7 @@
                     </div>
                 </div>
 
-                <div class="mt-6 bg-slate-800/50 rounded-2xl p-4 backdrop-blur-sm border border-slate-700/50 relative group cursor-pointer hover:bg-slate-800/70 transition-colors" onclick="window.openScaleModal()">
+                <div class="mt-6 bg-slate-800/50 rounded-2xl p-4 backdrop-blur-sm border border-slate-700/50 relative group cursor-pointer hover:bg-slate-800/70 transition-colors" onclick="openScaleModal()">
                     <div class="absolute top-4 right-4 text-slate-400 group-hover:text-white transition-colors">
                         <i class="ph-fill ph-pencil-simple"></i>
                     </div>
@@ -109,19 +114,19 @@
         <div class="px-6 py-2 md:px-0 md:bg-transparent">
             <h2 class="text-xs font-bold text-slate-400 mb-4 tracking-widest uppercase md:px-2">快速紀錄</h2>
             <div class="grid grid-cols-4 md:grid-cols-2 gap-3">
-                <button onclick="window.openModal('meal', '早餐')" class="group flex flex-col items-center justify-center py-4 bg-orange-50 rounded-2xl text-orange-600 hover:bg-orange-100 transition-colors active:scale-95 border border-orange-100 shadow-sm">
+                <button onclick="openModal('meal', '早餐')" class="group flex flex-col items-center justify-center py-4 bg-orange-50 rounded-2xl text-orange-600 hover:bg-orange-100 transition-colors active:scale-95 border border-orange-100 shadow-sm">
                     <i class="ph-fill ph-coffee text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
                     <span class="text-xs font-bold md:text-sm">早餐</span>
                 </button>
-                <button onclick="window.openModal('meal', '午餐')" class="group flex flex-col items-center justify-center py-4 bg-emerald-50 rounded-2xl text-emerald-600 hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-100 shadow-sm">
+                <button onclick="openModal('meal', '午餐')" class="group flex flex-col items-center justify-center py-4 bg-emerald-50 rounded-2xl text-emerald-600 hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-100 shadow-sm">
                     <i class="ph-fill ph-hamburger text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
                     <span class="text-xs font-bold md:text-sm">午餐</span>
                 </button>
-                <button onclick="window.openModal('meal', '晚餐')" class="group flex flex-col items-center justify-center py-4 bg-indigo-50 rounded-2xl text-indigo-600 hover:bg-indigo-100 transition-colors active:scale-95 border border-indigo-100 shadow-sm">
+                <button onclick="openModal('meal', '晚餐')" class="group flex flex-col items-center justify-center py-4 bg-indigo-50 rounded-2xl text-indigo-600 hover:bg-indigo-100 transition-colors active:scale-95 border border-indigo-100 shadow-sm">
                     <i class="ph-fill ph-bowl-food text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
                     <span class="text-xs font-bold md:text-sm">晚餐</span>
                 </button>
-                <button onclick="window.addWater()" class="group flex flex-col items-center justify-center py-4 bg-blue-50 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors active:scale-95 border border-blue-100 shadow-sm">
+                <button onclick="addWater()" class="group flex flex-col items-center justify-center py-4 bg-blue-50 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors active:scale-95 border border-blue-100 shadow-sm">
                     <i class="ph-fill ph-drop text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
                     <span class="text-xs font-bold md:text-sm">+250ml</span>
                 </button>
@@ -136,15 +141,11 @@
         </div>
         <div id="timeline-container" class="space-y-4">
             <!-- 動態生成 -->
-            <div class="text-center py-12">
-                <i class="ph ph-spinner-gap animate-spin text-4xl text-slate-300 mb-2"></i>
-                <p class="text-sm text-slate-400 font-medium">同步雲端資料中...</p>
-            </div>
         </div>
     </div>
 
     <div class="fixed bottom-0 w-full md:hidden bg-gradient-to-t from-[#f8fafc] via-[#f8fafc] to-transparent h-24 pointer-events-none z-10"></div>
-    <button onclick="window.openModal('meal', '宵夜/其他')" class="fixed bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-16 md:h-16 bg-slate-900 text-white rounded-full shadow-[0_8px_20px_rgba(15,23,42,0.3)] flex items-center justify-center hover:bg-slate-800 transition-all active:scale-90 z-20 hover:shadow-lg">
+    <button onclick="openModal('meal', '宵夜/其他')" class="fixed bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-16 md:h-16 bg-slate-900 text-white rounded-full shadow-[0_8px_20px_rgba(15,23,42,0.3)] flex items-center justify-center hover:bg-slate-800 transition-all active:scale-90 z-20 hover:shadow-lg">
         <i class="ph ph-plus text-2xl md:text-3xl font-bold"></i>
     </button>
 </div>
@@ -158,7 +159,7 @@
                 <i class="ph-fill ph-scales text-emerald-500 text-xl"></i>
                 <h3 class="text-xl font-black text-slate-800">記錄體態</h3>
             </div>
-            <button onclick="window.closeModal('scale-modal', 'scale-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+            <button onclick="closeModal('scale-modal', 'scale-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
                 <i class="ph ph-x font-bold"></i>
             </button>
         </div>
@@ -176,8 +177,8 @@
                 <input type="number" step="0.1" id="input-waist" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
             </div>
             
-            <button onclick="window.saveScaleData()" class="w-full bg-emerald-500 text-white font-bold rounded-xl px-4 py-4 mt-4 hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-md">
-                儲存至雲端
+            <button onclick="saveScaleData()" class="w-full bg-emerald-500 text-white font-bold rounded-xl px-4 py-4 mt-4 hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-md">
+                儲存數據
             </button>
         </div>
     </div>
@@ -189,7 +190,7 @@
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
         <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-black text-slate-800" id="modal-title">新增紀錄</h3>
-            <button onclick="window.closeModal('entry-modal', 'modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+            <button onclick="closeModal('entry-modal', 'modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
                 <i class="ph ph-x font-bold"></i>
             </button>
         </div>
@@ -214,8 +215,8 @@
                 </div>
             </div>
             
-            <button onclick="window.saveEntry()" class="w-full bg-slate-900 text-white font-bold rounded-xl px-4 py-4 mt-2 hover:bg-slate-800 active:scale-[0.98] transition-all shadow-md">
-                儲存至雲端
+            <button onclick="saveEntry()" class="w-full bg-slate-900 text-white font-bold rounded-xl px-4 py-4 mt-2 hover:bg-slate-800 active:scale-[0.98] transition-all shadow-md">
+                儲存紀錄
             </button>
         </div>
     </div>
@@ -226,8 +227,8 @@
     <div class="bg-white w-full max-w-md md:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-8 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100 overflow-y-auto max-h-[90vh]" id="data-modal-content">
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
         <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-black text-slate-800">資料管理 (雲端同步中)</h3>
-            <button onclick="window.closeModal('data-modal', 'data-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors">
+            <h3 class="text-xl font-black text-slate-800">資料管理</h3>
+            <button onclick="closeModal('data-modal', 'data-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors">
                 <i class="ph ph-x font-bold"></i>
             </button>
         </div>
@@ -238,17 +239,17 @@
                     <i class="ph-fill ph-magic-wand text-indigo-500 text-lg"></i>
                     <h4 class="font-bold text-slate-800">AI 紀錄同步</h4>
                 </div>
-                <p class="text-xs text-slate-500 mb-3 leading-relaxed">貼上 Markdown 表格，支援 7 欄新架構 (含熱量與蛋白質)，系統將自動增量更新至雲端。</p>
+                <p class="text-xs text-slate-500 mb-3 leading-relaxed">貼上 Markdown 表格，支援 7 欄新架構 (含熱量與蛋白質)，系統將自動增量更新。</p>
                 <textarea id="import-text" rows="4" class="w-full p-4 text-sm bg-slate-50 border border-slate-200 rounded-xl mb-3 focus:ring-2 focus:ring-slate-900 outline-none placeholder:text-slate-400 transition-all resize-none" placeholder="在此貼上表格內容..."></textarea>
-                <button onclick="window.handleTextImport()" class="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2">
-                    執行雲端同步更新
+                <button onclick="handleTextImport()" class="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2">
+                    執行同步更新
                 </button>
             </div>
 
             <div>
                 <h4 class="text-[11px] font-bold text-slate-400 mb-3 tracking-widest uppercase ml-1">進階選項與備份</h4>
                 <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-                    <button onclick="window.exportData()" class="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-100 transition-colors text-left active:bg-slate-200">
+                    <button onclick="exportData()" class="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-100 transition-colors text-left active:bg-slate-200">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-100">
                                 <i class="ph ph-download-simple text-slate-600 text-lg"></i>
@@ -257,53 +258,97 @@
                         </div>
                         <i class="ph ph-caret-right text-slate-400"></i>
                     </button>
-                    <input type="file" id="json-upload" accept=".json" class="hidden" onchange="window.handleJSONImport(event)">
+                    <input type="file" id="json-upload" accept=".json" class="hidden" onchange="handleJSONImport(event)">
                     <button onclick="document.getElementById('json-upload').click()" class="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-100 transition-colors text-left active:bg-slate-200">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-100">
                                 <i class="ph ph-upload-simple text-slate-600 text-lg"></i>
                             </div>
-                            <span class="text-sm font-bold text-slate-700">還原 JSON 備份檔 (上傳至雲端)</span>
+                            <span class="text-sm font-bold text-slate-700">還原 JSON 備份檔</span>
                         </div>
                         <i class="ph ph-caret-right text-slate-400"></i>
                     </button>
                 </div>
                 
-                <button onclick="window.clearAllData()" class="w-full mt-4 p-4 rounded-2xl text-red-500 font-bold bg-red-50 hover:bg-red-100 active:scale-[0.98] transition-all text-sm border border-red-100 flex justify-center items-center gap-2">
-                    <i class="ph-fill ph-warning-circle text-lg"></i> 清空所有雲端資料
+                <button onclick="clearAllData()" class="w-full mt-4 p-4 rounded-2xl text-red-500 font-bold bg-red-50 hover:bg-red-100 active:scale-[0.98] transition-all text-sm border border-red-100 flex justify-center items-center gap-2">
+                    <i class="ph-fill ph-warning-circle text-lg"></i> 清空所有歷史資料
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // Firebase 核心設定參數
+<script>
+    // 1. Firebase 初始化
     const firebaseConfig = {
-      apiKey: "AIzaSyC263lrmHJICThOoMlR4JacvnIJJ6ExxzA",
-      authDomain: "diet-tracker-20260819.firebaseapp.com",
-      projectId: "diet-tracker-20260819",
-      storageBucket: "diet-tracker-20260819.firebasestorage.app",
-      messagingSenderId: "574990158319",
-      appId: "1:574990158319:web:358b8326ec7b4809c7ce1a"
+        apiKey: "AIzaSyC263lrmHJICThOoMlR4JacvnIJJ6ExxzA",
+        authDomain: "diet-tracker-20260819.firebaseapp.com",
+        projectId: "diet-tracker-20260819",
+        storageBucket: "diet-tracker-20260819.firebasestorage.app",
+        messagingSenderId: "574990158319",
+        appId: "1:574990158319:web:358b8326ec7b4809c7ce1a"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    // 初始化 Firebase 與 Firestore
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 全域狀態物件，資料更新全靠 Firebase 即時推送
-    window.state = {
-        entries: [],
-        scaleData: []
+    let state = {
+        entries: JSON.parse(localStorage.getItem('diet_entries_v4')) || [], 
+        scaleData: JSON.parse(localStorage.getItem('scale_entries_v2')) || [] 
     };
     const DAILY_WATER_GOAL = 2000;
 
+    // 2. 雲端資料同步函數
+    async function syncFromFirebase() {
+        try {
+            const snapshot = await db.collection('diet_records').orderBy('createdAt', 'desc').get();
+            const cloudData = [];
+            
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                let timeStr = new Date().toISOString();
+                if (data.createdAt) {
+                    timeStr = data.createdAt.toDate().toISOString();
+                }
+
+                cloudData.push({
+                    id: doc.id,
+                    type: 'meal',
+                    category: data.type || '晚餐', // 若 AI 沒指定則預設為晚餐
+                    title: data.title || '未命名餐點',
+                    calories: parseInt(data.calories) || 0,
+                    protein: parseInt(data.protein) || 0,
+                    analysis: data.analysis || '',
+                    advice: data.advice || '',
+                    context: 'LINE 同步',
+                    timestamp: timeStr
+                });
+            });
+
+            // 整合雲端與本地端資料
+            const combined = [...cloudData, ...state.entries];
+            const uniqueEntries = Array.from(new Map(combined.map(item => [item.id, item])).values());
+            
+            state.entries = uniqueEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            saveData();
+            renderDashboard();
+            renderTimeline();
+        } catch (error) {
+            console.error("Firebase 讀取失敗:", error);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-        updateDate();
+        if(state.entries.length === 0 && localStorage.getItem('diet_entries_v3')) {
+            state.entries = JSON.parse(localStorage.getItem('diet_entries_v3'));
+            saveData();
+        }
+        updateDate(); 
+        renderDashboard(); 
+        renderTimeline();
+        renderScaleData();
+        
+        // 啟動 Firebase 雲端同步
+        syncFromFirebase();
     });
 
     function updateDate() {
@@ -311,29 +356,12 @@
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW', options);
     }
 
-    // ==========================================
-    // Firestore 即時資料監聽器 (Real-time Listeners)
-    // ==========================================
-    onSnapshot(collection(db, "meals"), (snapshot) => {
-        window.state.entries = snapshot.docs.map(doc => doc.data());
-        renderDashboard();
-        renderTimeline();
-    });
-
-    onSnapshot(collection(db, "scale"), (snapshot) => {
-        window.state.scaleData = snapshot.docs.map(doc => doc.data()).sort((a, b) => new Date(b.date) - new Date(a.date));
-        renderScaleData();
-    });
-
-    // ==========================================
-    // UI 控制與資料操作函式
-    // ==========================================
-    window.openScaleModal = function() {
+    function openScaleModal() {
         const m = document.getElementById('scale-modal');
         const c = document.getElementById('scale-modal-content');
         
-        if (window.state.scaleData.length > 0) {
-            const latest = window.state.scaleData[0];
+        if (state.scaleData.length > 0) {
+            const latest = state.scaleData[0];
             document.getElementById('input-weight').value = latest.weight || '';
             document.getElementById('input-fat').value = latest.fat || '';
             document.getElementById('input-waist').value = latest.waist || '';
@@ -347,34 +375,40 @@
         setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }, 10);
     }
 
-    window.saveScaleData = async function() {
+    function saveScaleData() {
         const weight = parseFloat(document.getElementById('input-weight').value);
         const fat = parseFloat(document.getElementById('input-fat').value);
         const waist = parseFloat(document.getElementById('input-waist').value);
 
         if (!weight && !fat && !waist) {
-            window.closeModal('scale-modal', 'scale-modal-content');
+            closeModal('scale-modal', 'scale-modal-content');
             return;
         }
 
-        const dateStr = new Date().toISOString().split('T')[0];
-        let id = 'scale_' + Date.now();
-        
-        // 如果今天已經有記錄，則直接覆蓋同一個 ID
-        const existing = window.state.scaleData.find(e => e.date === dateStr);
-        if (existing) { id = existing.id; }
+        const newScaleEntry = {
+            id: 'scale_' + Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            weight: weight || 0,
+            fat: fat || 0,
+            waist: waist || 0
+        };
 
-        const newScaleEntry = { id, date: dateStr, weight: weight || 0, fat: fat || 0, waist: waist || 0 };
-        
-        // 寫入雲端 (不需手動修改 state，監聽器會自動觸發 UI 更新)
-        await setDoc(doc(db, "scale", id), newScaleEntry);
-        window.closeModal('scale-modal', 'scale-modal-content');
+        const todayIndex = state.scaleData.findIndex(e => e.date === newScaleEntry.date);
+        if (todayIndex !== -1) {
+            state.scaleData[todayIndex] = newScaleEntry;
+        } else {
+            state.scaleData.unshift(newScaleEntry);
+        }
+
+        localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
+        closeModal('scale-modal', 'scale-modal-content');
+        renderScaleData();
     }
 
     function renderScaleData() {
-        if (window.state.scaleData.length === 0) return;
+        if (state.scaleData.length === 0) return;
         
-        const latest = window.state.scaleData[0];
+        const latest = state.scaleData[0];
         document.getElementById('display-weight').textContent = latest.weight ? latest.weight : '-';
         document.getElementById('display-fat').textContent = latest.fat ? latest.fat + '%' : '-';
         document.getElementById('display-waist').textContent = latest.waist ? latest.waist : '-';
@@ -383,20 +417,19 @@
         document.getElementById('scale-date').textContent = `最後更新：${dateObj.getMonth()+1}/${dateObj.getDate()}`;
     }
 
-    window.openDataModal = function() {
+    function openDataModal() {
         const m = document.getElementById('data-modal');
         const c = document.getElementById('data-modal-content');
         m.classList.remove('hidden');
         setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }, 10);
     }
 
-    window.handleTextImport = async function() {
+    function handleTextImport() {
         const text = document.getElementById('import-text').value;
         if (!text.trim()) { alert('請先貼上資料。'); return; }
         
         let addedCount = 0; let updatedCount = 0;
         const lines = text.split('\n');
-        const promises = [];
 
         lines.forEach(line => {
             let cleanLine = line.trim();
@@ -407,7 +440,7 @@
             if (cleanLine.includes('|')) {
                 row = cleanLine.split('|').map(s => s.trim());
             } else {
-                const parsed = window.Papa.parse(cleanLine);
+                const parsed = Papa.parse(cleanLine);
                 if (parsed.data && parsed.data.length > 0) row = parsed.data[0].map(s => s.trim());
             }
 
@@ -426,6 +459,7 @@
                 else if (fullDateString.includes('宵夜')) { category = '宵夜'; timeStr = '23:00'; }
                 
                 const timestamp = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+                
                 const context = row[1] || ''; 
                 const content = row[2] || '未紀錄內容';
                 
@@ -442,7 +476,7 @@
                 }
                 
                 const newEntry = {
-                    id: 'import_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                    id: 'import_' + Date.now() + Math.random(),
                     type: content.includes('水') && !content.includes('餃') && !content.includes('果') ? 'water' : 'meal',
                     category: category, 
                     title: content, 
@@ -455,35 +489,35 @@
                     timestamp: timestamp
                 };
 
-                const existingIndex = window.state.entries.findIndex(e => e.timestamp.startsWith(dateStr) && e.category === category && e.type === 'meal');
+                const existingIndex = state.entries.findIndex(e => e.timestamp.startsWith(dateStr) && e.category === category && e.type === 'meal');
 
                 if (existingIndex !== -1 && newEntry.type === 'meal') {
-                    newEntry.id = window.state.entries[existingIndex].id;
+                    newEntry.id = state.entries[existingIndex].id;
+                    state.entries[existingIndex] = newEntry; 
                     updatedCount++;
                 } else {
+                    state.entries.push(newEntry); 
                     addedCount++;
                 }
-                
-                promises.push(setDoc(doc(db, "meals", newEntry.id), newEntry));
             }
         });
         
-        if (promises.length > 0) {
-            await Promise.all(promises);
-            alert(`雲端同步完成！\n新增/更新了 ${promises.length} 筆資料。`);
-            document.getElementById('import-text').value = '';
-            window.closeModal('data-modal', 'data-modal-content');
+        if (addedCount > 0 || updatedCount > 0) {
+            saveData();
+            alert(`匯入完成！\n新增紀錄：${addedCount} 筆\n更新舊紀錄：${updatedCount} 筆`);
+            location.reload();
         } else {
             alert('沒有讀取到有效資料。');
         }
     }
 
-    window.exportData = function() {
-        const backupData = { meals: window.state.entries, scale: window.state.scaleData };
+    function exportData() {
+        const backupData = { meals: state.entries, scale: state.scaleData };
         const dataStr = JSON.stringify(backupData, null, 2); 
+        
         const blob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const exportFileDefaultName = `diet_backup_cloud_${new Date().toISOString().split('T')[0]}.json`;
+        const exportFileDefaultName = `diet_backup_${new Date().toISOString().split('T')[0]}.json`;
         
         let linkElement = document.createElement('a');
         linkElement.setAttribute('href', url);
@@ -495,64 +529,43 @@
         URL.revokeObjectURL(url); 
     }
 
-    // 將備份的 JSON 打上雲端
-    window.handleJSONImport = async function(event) {
+    function handleJSONImport(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = async function(e) {
+        reader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                let meals = [];
-                let scale = [];
                 if(importedData.meals) {
-                    meals = importedData.meals;
-                    scale = importedData.scale || [];
+                    state.entries = importedData.meals;
+                    state.scaleData = importedData.scale || [];
                 } else if (Array.isArray(importedData)) {
-                    meals = importedData;
+                    state.entries = importedData;
                 }
-                
-                // 清除掉目前單機版的緩存
-                localStorage.removeItem('diet_entries_v3');
-                localStorage.removeItem('diet_entries_v4');
-                localStorage.removeItem('scale_entries_v2');
-
-                const promises = [];
-                meals.forEach(entry => promises.push(setDoc(doc(db, "meals", entry.id), entry)));
-                scale.forEach(entry => promises.push(setDoc(doc(db, "scale", entry.id), entry)));
-
-                await Promise.all(promises);
-                alert('備份資料已全數上傳至 Firestore 雲端！');
-                window.closeModal('data-modal', 'data-modal-content');
-                document.getElementById('json-upload').value = '';
-            } catch (err) { 
-                alert('檔案格式錯誤。'); 
-                console.error(err);
-            }
+                saveData();
+                localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
+                alert('備份還原成功！');
+                location.reload();
+            } catch (err) { alert('檔案格式錯誤。'); }
         };
         reader.readAsText(file);
     }
 
-    // 逐筆刪除雲端資料
-    window.clearAllData = async function() {
-        if(confirm('警告：確定要清空雲端所有的紀錄嗎？此動作無法復原。')) {
-            const promises = [];
-            window.state.entries.forEach(e => promises.push(deleteDoc(doc(db, "meals", e.id))));
-            window.state.scaleData.forEach(e => promises.push(deleteDoc(doc(db, "scale", e.id))));
-            await Promise.all(promises);
-            alert('雲端資料已全數清空。');
-            window.closeModal('data-modal', 'data-modal-content');
+    function clearAllData() {
+        if(confirm('警告：確定要刪除所有紀錄嗎？此動作無法復原。')) {
+            state.entries = []; state.scaleData = [];
+            saveData(); localStorage.removeItem('scale_entries_v2');
+            location.reload();
         }
     }
 
-    window.addWater = async function() {
-        const id = Date.now().toString();
-        const entry = { id: id, type: 'water', title: '喝水', amount: 250, timestamp: new Date().toISOString() };
-        await setDoc(doc(db, "meals", id), entry);
+    function addWater() {
+        const entry = { id: Date.now().toString(), type: 'water', title: '喝水', amount: 250, timestamp: new Date().toISOString() };
+        state.entries.unshift(entry); saveData(); renderDashboard(); renderTimeline();
         if (navigator.vibrate) { navigator.vibrate(50); }
     }
 
-    window.saveEntry = async function() {
+    function saveEntry() {
         const type = document.getElementById('entry-type').value;
         const content = document.getElementById('entry-content').value;
         const context = document.getElementById('entry-context').value;
@@ -566,25 +579,31 @@
             return;
         }
         
-        const id = Date.now().toString();
         const entry = { 
-            id: id, type: 'meal', category: type, title: content, context: context, 
-            calories: cals, protein: protein, timestamp: new Date().toISOString() 
+            id: Date.now().toString(), 
+            type: 'meal', 
+            category: type, 
+            title: content, 
+            context: context, 
+            calories: cals,
+            protein: protein,
+            timestamp: new Date().toISOString() 
         };
-        
-        await setDoc(doc(db, "meals", id), entry);
-        window.closeModal('entry-modal', 'modal-content'); 
+        state.entries.unshift(entry); saveData(); closeModal('entry-modal', 'modal-content'); renderDashboard(); renderTimeline();
     }
 
-    window.deleteEntry = async function(id) {
+    function deleteEntry(id) {
         if(confirm('確定要刪除這筆紀錄嗎？')) {
-            await deleteDoc(doc(db, "meals", id));
+            state.entries = state.entries.filter(e => e.id !== id);
+            saveData(); renderDashboard(); renderTimeline();
         }
     }
 
+    function saveData() { localStorage.setItem('diet_entries_v4', JSON.stringify(state.entries)); }
+
     function renderDashboard() {
         const today = new Date().toDateString();
-        const todayEntries = window.state.entries.filter(e => new Date(e.timestamp).toDateString() === today);
+        const todayEntries = state.entries.filter(e => new Date(e.timestamp).toDateString() === today);
         let totalWater = 0; let totalCals = 0; let totalProtein = 0;
         
         todayEntries.forEach(e => { 
@@ -605,10 +624,11 @@
 
     function renderTimeline() {
         const container = document.getElementById('timeline-container');
-        const sortedEntries = [...window.state.entries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        const sortedEntries = [...state.entries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         if (sortedEntries.length === 0) {
-            container.innerHTML = `<div class="text-center py-12 bg-slate-50 md:bg-white rounded-2xl border border-dashed border-slate-200"><i class="ph ph-note-blank text-4xl text-slate-300 mb-2"></i><p class="text-sm text-slate-400 font-medium">尚無紀錄，點擊左上角齒輪匯入資料</p></div>`;
+            container.innerHTML = `<div class="text-center py-12 bg-slate-50 md:bg-white rounded-2xl border border-dashed border-slate-200"><i class="ph ph-note-blank text-4xl text-slate-300 mb-2"></i><p class="text-sm text-slate-400 font-medium">尚無紀錄，點擊左下角齒輪匯入資料</p></div>`;
             return;
         }
 
@@ -627,10 +647,16 @@
             const weekKey = getWeekKey(entryDate);
             const dateStr = entryDate.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
             
-            if (!weeks.has(weekKey)) { weeks.set(weekKey, { totalCals: 0, totalProtein: 0, days: new Map(), start: weekKey }); }
+            if (!weeks.has(weekKey)) {
+                weeks.set(weekKey, { totalCals: 0, totalProtein: 0, days: new Map(), start: weekKey });
+            }
+            
             const weekObj = weeks.get(weekKey);
             
-            if (!weekObj.days.has(dateStr)) { weekObj.days.set(dateStr, { cals: 0, protein: 0, entries: [] }); }
+            if (!weekObj.days.has(dateStr)) {
+                weekObj.days.set(dateStr, { cals: 0, protein: 0, entries: [] });
+            }
+            
             const dayObj = weekObj.days.get(dateStr);
             dayObj.entries.push({ entry, index }); 
             
@@ -647,6 +673,7 @@
         let htmlContent = '';
 
         Array.from(weeks.values()).sort((a, b) => b.start - a.start).forEach(week => {
+            
             const startDate = new Date(week.start);
             const endDate = new Date(week.start);
             endDate.setDate(endDate.getDate() + 6);
@@ -677,6 +704,7 @@
             </div>`;
             
             Array.from(week.days.entries()).forEach(([dateStr, day]) => {
+                
                 htmlContent += `
                 <div class="flex justify-between items-center pt-4 pb-3 mb-2 border-b border-slate-100">
                     <span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full shadow-sm">${dateStr}</span>
@@ -688,9 +716,10 @@
                 
                 day.entries.forEach(({ entry, index }) => {
                     const timeString = new Date(entry.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                    const animClass = index === 0 ? 'animate-slide-up' : '';
                     
                     if (entry.type === 'water') {
-                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3"><div class="w-12 h-12 rounded-xl bg-blue-100/50 flex items-center justify-center flex-shrink-0 text-blue-500"><i class="ph-fill ph-drop text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">喝水</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-blue-600 text-sm font-bold mt-1">+${entry.amount} ml</p></div><button onclick="window.deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3 ${animClass}"><div class="w-12 h-12 rounded-xl bg-blue-100/50 flex items-center justify-center flex-shrink-0 text-blue-500"><i class="ph-fill ph-drop text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">喝水</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-blue-600 text-sm font-bold mt-1">+${entry.amount} ml</p></div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
                     } else {
                         let icon = 'ph-bowl-food', iconColor = 'text-indigo-500', bgColor = 'bg-indigo-100/50';
                         if (entry.category === '早餐') { icon = 'ph-coffee'; iconColor = 'text-orange-500'; bgColor = 'bg-orange-100/50'; }
@@ -715,7 +744,7 @@
                             analysisHtml += `</div>`;
                         }
 
-                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3 hover:shadow-md transition-shadow"><div class="w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0 ${iconColor}"><i class="ph-fill ${icon} text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">${entry.category}</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-slate-900 font-bold leading-relaxed text-base">${entry.title}</p><div>${contextHtml}${nutritionHtml}</div>${analysisHtml}</div><button onclick="window.deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3 hover:shadow-md transition-shadow ${animClass}"><div class="w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0 ${iconColor}"><i class="ph-fill ${icon} text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">${entry.category}</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-slate-900 font-bold leading-relaxed text-base">${entry.title}</p><div>${contextHtml}${nutritionHtml}</div>${analysisHtml}</div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
                     }
                 });
             });
@@ -724,7 +753,7 @@
         container.innerHTML = htmlContent;
     }
 
-    window.openModal = function(type, category) {
+    function openModal(type, category) {
         document.getElementById('modal-title').textContent = `紀錄${category}`;
         document.getElementById('entry-type').value = category;
         document.getElementById('entry-content').value = '';
@@ -735,14 +764,14 @@
         m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); document.getElementById('entry-content').focus(); }, 10);
     }
 
-    window.closeModal = function(modalId, contentId) {
+    function closeModal(modalId, contentId) {
         const m = document.getElementById(modalId); const c = document.getElementById(contentId);
         m.classList.add('opacity-0'); c.classList.add('translate-y-full'); setTimeout(() => { m.classList.add('hidden'); }, 300);
     }
 
-    document.getElementById('entry-modal').addEventListener('click', (e) => { if (e.target.id === 'entry-modal') window.closeModal('entry-modal', 'modal-content'); });
-    document.getElementById('data-modal').addEventListener('click', (e) => { if (e.target.id === 'data-modal') window.closeModal('data-modal', 'data-modal-content'); });
-    document.getElementById('scale-modal').addEventListener('click', (e) => { if (e.target.id === 'scale-modal') window.closeModal('scale-modal', 'scale-modal-content'); });
+    document.getElementById('entry-modal').addEventListener('click', (e) => { if (e.target.id === 'entry-modal') closeModal('entry-modal', 'modal-content'); });
+    document.getElementById('data-modal').addEventListener('click', (e) => { if (e.target.id === 'data-modal') closeModal('data-modal', 'data-modal-content'); });
+    document.getElementById('scale-modal').addEventListener('click', (e) => { if (e.target.id === 'scale-modal') closeModal('scale-modal', 'scale-modal-content'); });
 </script>
 </body>
 </html>
