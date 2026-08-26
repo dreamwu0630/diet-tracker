@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>飲食健康追蹤</title>
+    <title>我的日常飲食手帳</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -13,258 +13,227 @@
 
     <style>
         body { 
-            background-color: #f8fafc; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #FBF9F5; /* 溫暖的紙質米白色 */
+            color: #2D2B2A;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif; 
             -webkit-tap-highlight-color: transparent; 
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-up {
-            animation: slideUp 0.3s ease-out forwards;
-        }
     </style>
 </head>
-<body class="text-slate-800 antialiased">
+<body class="antialiased selection:bg-amber-100 selection:text-amber-900">
 
-<div class="max-w-6xl mx-auto min-h-screen relative md:p-6 lg:p-8 flex flex-col md:flex-row gap-6 lg:gap-10 pb-28 md:pb-8">
+<div class="max-w-5xl mx-auto min-h-screen relative p-4 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 pb-24 md:pb-8">
     
-    <div class="w-full md:w-80 lg:w-[400px] flex-shrink-0 md:sticky md:top-8 h-fit space-y-6">
-        <header class="pt-12 pb-8 px-6 bg-slate-900 text-white rounded-b-[2rem] md:rounded-[2rem] shadow-lg relative overflow-hidden">
-            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full bg-slate-800 opacity-50 blur-2xl"></div>
+    <!-- 左側：今日概況與生活數據 -->
+    <div class="w-full md:w-80 flex-shrink-0 md:sticky md:top-8 h-fit space-y-5">
+        
+        <!-- 今日概況卡片 -->
+        <header class="p-6 bg-white rounded-2xl border border-stone-200 shadow-sm relative">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-stone-800 tracking-tight">今日飲食概況</h1>
+                    <p class="text-stone-400 text-xs mt-0.5 font-medium" id="current-date">載入中...</p>
+                </div>
+                <button onclick="openDataModal()" class="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition" title="資料管理">
+                    <i class="ph ph-sliders text-lg"></i>
+                </button>
+            </div>
             
-            <div class="relative z-10">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-wide mb-1">今日概況</h1>
-                        <p class="text-slate-400 text-sm font-medium" id="current-date">載入中...</p>
-                    </div>
-                    <button onclick="openDataModal()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition">
-                        <i class="ph-fill ph-gear text-slate-300 text-xl"></i>
-                    </button>
-                </div>
-                
-                <div class="mt-8 grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-sm text-slate-400 mb-1 font-medium">今日總熱量</p>
-                        <div class="flex items-baseline gap-1">
-                            <span class="text-3xl font-bold tracking-tight text-white" id="total-cals">0</span>
-                            <span class="text-xs text-slate-500 font-medium">kcal</span>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-400 mb-1 font-medium">今日總蛋白質</p>
-                        <div class="flex items-baseline gap-1">
-                            <span class="text-3xl font-bold tracking-tight text-emerald-400" id="total-protein">0</span>
-                            <span class="text-xs text-slate-500 font-medium">g</span>
-                        </div>
+            <div class="grid grid-cols-2 gap-4 pb-5 border-b border-stone-100">
+                <div>
+                    <p class="text-xs text-stone-500 mb-1">攝取熱量</p>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-2xl font-bold tracking-tight text-stone-800" id="total-cals">0</span>
+                        <span class="text-xs text-stone-400">大卡</span>
                     </div>
                 </div>
+                <div>
+                    <p class="text-xs text-stone-500 mb-1">蛋白質</p>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-2xl font-bold tracking-tight text-stone-800" id="total-protein">0</span>
+                        <span class="text-xs text-stone-400">公克</span>
+                    </div>
+                </div>
+            </div>
 
-                <div class="mt-6 bg-slate-800/50 rounded-2xl p-4 backdrop-blur-sm border border-slate-700/50 relative group cursor-pointer hover:bg-slate-800/70 transition-colors" onclick="openScaleModal()">
-                    <div class="absolute top-4 right-4 text-slate-400 group-hover:text-white transition-colors">
-                        <i class="ph-fill ph-pencil-simple"></i>
+            <!-- 最新體態 -->
+            <div class="mt-4 pt-1 cursor-pointer group" onclick="openScaleModal()">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-stone-600 flex items-center gap-1.5">
+                        <i class="ph ph-scales text-stone-500"></i> 最新體態紀錄
+                    </span>
+                    <span id="scale-date" class="text-[11px] text-stone-400 group-hover:text-stone-600 transition">尚未紀錄</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 bg-stone-50 rounded-xl p-3 border border-stone-100 text-center">
+                    <div>
+                        <p class="text-[11px] text-stone-400">體重</p>
+                        <p class="font-semibold text-sm text-stone-700 mt-0.5" id="display-weight">-</p>
                     </div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="p-1 bg-emerald-500/20 rounded-md">
-                            <i class="ph-fill ph-scales text-emerald-400"></i>
-                        </div>
-                        <span class="text-sm font-medium">最新體態數據</span>
-                        <span id="scale-date" class="text-xs text-slate-500 ml-auto mr-6">尚未紀錄</span>
+                    <div class="border-x border-stone-200">
+                        <p class="text-[11px] text-stone-400">體脂率</p>
+                        <p class="font-semibold text-sm text-stone-700 mt-0.5" id="display-fat">-</p>
                     </div>
-                    <div class="grid grid-cols-3 gap-2 divide-x divide-slate-700/50">
-                        <div class="text-center">
-                            <p class="text-xs text-slate-400 mb-1">體重</p>
-                            <p class="font-bold text-lg" id="display-weight">-</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-xs text-slate-400 mb-1">體脂率</p>
-                            <p class="font-bold text-lg" id="display-fat">-</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-xs text-slate-400 mb-1">腰圍 (cm)</p>
-                            <p class="font-bold text-lg text-emerald-400" id="display-waist">-</p>
-                        </div>
+                    <div>
+                        <p class="text-[11px] text-stone-400">腰圍</p>
+                        <p class="font-semibold text-sm text-stone-700 mt-0.5" id="display-waist">-</p>
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-4 bg-slate-800/50 rounded-2xl p-4 backdrop-blur-sm border border-slate-700/50">
-                    <div class="flex justify-between text-sm mb-3">
-                        <span class="flex items-center gap-2 font-medium">
-                            <div class="p-1 bg-blue-500/20 rounded-md">
-                                <i class="ph-fill ph-drop text-blue-400"></i>
-                            </div>
-                            水分目標
-                        </span>
-                        <span id="water-text" class="text-slate-300 font-medium">0 / 2000 ml</span>
-                    </div>
-                    <div class="w-full bg-slate-900 rounded-full h-3 inner-shadow">
-                        <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-3 rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(56,189,248,0.4)]" id="water-bar" style="width: 0%"></div>
-                    </div>
+            <!-- 飲水目標 -->
+            <div class="mt-4 pt-3 border-t border-stone-100">
+                <div class="flex justify-between text-xs mb-2">
+                    <span class="text-stone-600 font-medium flex items-center gap-1.5">
+                        <i class="ph ph-drop text-amber-700"></i> 每日水分
+                    </span>
+                    <span id="water-text" class="text-stone-500 font-medium">0 / 2000 ml</span>
+                </div>
+                <div class="w-full bg-stone-100 rounded-full h-2 overflow-hidden">
+                    <div class="bg-amber-600/80 h-2 rounded-full transition-all duration-500" id="water-bar" style="width: 0%"></div>
                 </div>
             </div>
         </header>
 
-        <div class="px-6 py-2 md:px-0 md:bg-transparent">
-            <h2 class="text-xs font-bold text-slate-400 mb-4 tracking-widest uppercase md:px-2">快速紀錄</h2>
-            <div class="grid grid-cols-4 md:grid-cols-2 gap-3">
-                <button onclick="openModal('meal', '早餐')" class="group flex flex-col items-center justify-center py-4 bg-orange-50 rounded-2xl text-orange-600 hover:bg-orange-100 transition-colors active:scale-95 border border-orange-100 shadow-sm">
-                    <i class="ph-fill ph-coffee text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold md:text-sm">早餐</span>
+        <!-- 快速新增按鈕 -->
+        <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+            <h2 class="text-xs font-bold text-stone-400 mb-3 px-1 tracking-wider uppercase">快速紀錄</h2>
+            <div class="grid grid-cols-4 gap-2">
+                <button onclick="openModal('meal', '早餐')" class="flex flex-col items-center justify-center py-3 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
+                    <i class="ph ph-coffee text-xl mb-1"></i>
+                    <span class="text-xs font-medium">早餐</span>
                 </button>
-                <button onclick="openModal('meal', '午餐')" class="group flex flex-col items-center justify-center py-4 bg-emerald-50 rounded-2xl text-emerald-600 hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-100 shadow-sm">
-                    <i class="ph-fill ph-hamburger text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold md:text-sm">午餐</span>
+                <button onclick="openModal('meal', '午餐')" class="flex flex-col items-center justify-center py-3 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
+                    <i class="ph ph-bowl-food text-xl mb-1"></i>
+                    <span class="text-xs font-medium">午餐</span>
                 </button>
-                <button onclick="openModal('meal', '晚餐')" class="group flex flex-col items-center justify-center py-4 bg-indigo-50 rounded-2xl text-indigo-600 hover:bg-indigo-100 transition-colors active:scale-95 border border-indigo-100 shadow-sm">
-                    <i class="ph-fill ph-bowl-food text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold md:text-sm">晚餐</span>
+                <button onclick="openModal('meal', '晚餐')" class="flex flex-col items-center justify-center py-3 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
+                    <i class="ph ph-cooking-pot text-xl mb-1"></i>
+                    <span class="text-xs font-medium">晚餐</span>
                 </button>
-                <button onclick="addWater()" class="group flex flex-col items-center justify-center py-4 bg-blue-50 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors active:scale-95 border border-blue-100 shadow-sm">
-                    <i class="ph-fill ph-drop text-2xl mb-2 md:text-3xl group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold md:text-sm">+250ml</span>
+                <button onclick="addWater()" class="flex flex-col items-center justify-center py-3 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
+                    <i class="ph ph-drop text-xl mb-1 text-amber-700"></i>
+                    <span class="text-xs font-medium">+250ml</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <div class="flex-1 w-full px-6 md:px-8 md:py-8 md:bg-white md:rounded-[2rem] md:shadow-sm md:border md:border-slate-100 min-h-[80vh]">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xs font-bold text-slate-400 tracking-widest uppercase">時間軸紀錄</h2>
+    <!-- 右側：飲食手帳時間軸 -->
+    <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-7 min-h-[80vh]">
+        <div class="flex justify-between items-center mb-5 pb-3 border-b border-stone-100">
+            <h2 class="text-sm font-bold text-stone-700 tracking-wider flex items-center gap-2">
+                <i class="ph ph-book-open text-base text-stone-400"></i> 飲食紀錄時間軸
+            </h2>
         </div>
-        <div id="timeline-container" class="space-y-4">
-            </div>
+        <div id="timeline-container" class="space-y-6"></div>
     </div>
 
-    <div class="fixed bottom-0 w-full md:hidden bg-gradient-to-t from-[#f8fafc] via-[#f8fafc] to-transparent h-24 pointer-events-none z-10"></div>
-    <button onclick="openModal('meal', '宵夜/其他')" class="fixed bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-16 md:h-16 bg-slate-900 text-white rounded-full shadow-[0_8px_20px_rgba(15,23,42,0.3)] flex items-center justify-center hover:bg-slate-800 transition-all active:scale-90 z-20 hover:shadow-lg">
-        <i class="ph ph-plus text-2xl md:text-3xl font-bold"></i>
+    <!-- 浮動新增按鈕（手機版） -->
+    <button onclick="openModal('meal', '點心/其他')" class="fixed bottom-6 right-6 md:hidden w-13 h-13 bg-stone-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-stone-700 transition active:scale-90 z-20">
+        <i class="ph ph-plus text-2xl font-bold"></i>
     </button>
 </div>
 
-<div id="scale-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100" id="scale-modal-content">
-        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
-        <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center gap-2">
-                <i class="ph-fill ph-scales text-emerald-500 text-xl"></i>
-                <h3 class="text-xl font-black text-slate-800">記錄體態</h3>
-            </div>
-            <button onclick="closeModal('scale-modal', 'scale-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
-                <i class="ph ph-x font-bold"></i>
+<!-- 體態彈窗 -->
+<div id="scale-modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-xs z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl p-6 shadow-xl border border-stone-100" id="scale-modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-bold text-stone-800">記錄體態數據</h3>
+            <button onclick="closeModal('scale-modal', 'scale-modal-content')" class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg">
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
-        <div class="space-y-4">
+        <div class="space-y-3">
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1.5">體重 (kg)</label>
-                <input type="number" step="0.1" id="input-weight" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1.5">體脂率 (%)</label>
-                <input type="number" step="0.1" id="input-fat" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
+                <label class="block text-xs font-medium text-stone-600 mb-1">體重 (kg)</label>
+                <input type="number" step="0.1" id="input-weight" class="w-full bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-sm outline-none focus:border-stone-400">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1.5">腰圍 (cm) <span class="text-xs text-slate-400 font-normal">(每週量測即可)</span></label>
-                <input type="number" step="0.1" id="input-waist" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
-            </div>
-            
-            <button onclick="saveScaleData()" class="w-full bg-emerald-500 text-white font-bold rounded-xl px-4 py-4 mt-4 hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-md">
-                儲存數據
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="entry-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100" id="modal-content">
-        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-black text-slate-800" id="modal-title">新增紀錄</h3>
-            <button onclick="closeModal('entry-modal', 'modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
-                <i class="ph ph-x font-bold"></i>
-            </button>
-        </div>
-        <div class="space-y-4">
-            <input type="hidden" id="entry-type" value="">
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1.5">內容 <span class="text-red-500">*</span></label>
-                <input type="text" id="entry-content" placeholder="例如：麥當勞雞塊餐" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent block p-3.5 outline-none transition-all placeholder:text-slate-400 font-medium">
+                <label class="block text-xs font-medium text-stone-600 mb-1">體脂率 (%)</label>
+                <input type="number" step="0.1" id="input-fat" class="w-full bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-sm outline-none focus:border-stone-400">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1.5">情境標籤</label>
-                <input type="text" id="entry-context" placeholder="例如：週末深夜放鬆" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent block p-3.5 outline-none transition-all placeholder:text-slate-400 font-medium">
+                <label class="block text-xs font-medium text-stone-600 mb-1">腰圍 (cm)</label>
+                <input type="number" step="0.1" id="input-waist" class="w-full bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-sm outline-none focus:border-stone-400">
             </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1.5">熱量 (kcal)</label>
-                    <input type="number" id="entry-cals" placeholder="選填" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1.5">蛋白質 (g)</label>
-                    <input type="number" id="entry-protein" placeholder="選填" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent block p-3.5 outline-none transition-all font-medium">
-                </div>
-            </div>
-            
-            <button onclick="saveEntry()" class="w-full bg-slate-900 text-white font-bold rounded-xl px-4 py-4 mt-2 hover:bg-slate-800 active:scale-[0.98] transition-all shadow-md">
+            <button onclick="saveScaleData()" class="w-full bg-stone-800 text-white font-medium rounded-lg py-2.5 text-sm hover:bg-stone-700 transition mt-2">
                 儲存紀錄
             </button>
         </div>
     </div>
 </div>
 
-<div id="data-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-md md:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-8 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl border border-slate-100 overflow-y-auto max-h-[90vh]" id="data-modal-content">
-        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-black text-slate-800">資料管理</h3>
-            <button onclick="closeModal('data-modal', 'data-modal-content')" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors">
-                <i class="ph ph-x font-bold"></i>
+<!-- 飲食手動新增彈窗 -->
+<div id="entry-modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-xs z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl p-6 shadow-xl border border-stone-100" id="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-bold text-stone-800" id="modal-title">手動紀錄</h3>
+            <button onclick="closeModal('entry-modal', 'modal-content')" class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+        </div>
+        <div class="space-y-3">
+            <input type="hidden" id="entry-type" value="">
+            <div>
+                <label class="block text-xs font-medium text-stone-600 mb-1">餐點內容</label>
+                <input type="text" id="entry-content" placeholder="例如：烤雞腿便當" class="w-full bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-sm outline-none focus:border-stone-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-stone-600 mb-1">備註 / 情境</label>
+                <input type="text" id="entry-context" placeholder="例如：少飯、外送" class="w-full bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-sm outline-none focus:border-stone-400">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-medium text-stone-600 mb-1">估算熱量 (大卡)</label>
+                    <input type="number" id="entry-cals" placeholder="選填" class="w-full bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-sm outline-none focus:border-stone-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-stone-600 mb-1">蛋白質 (克)</label>
+                    <input type="number" id="entry-protein" placeholder="選填" class="w-full bg-stone-50 border border-stone-200 rounded-lg p-2.5 text-sm outline-none focus:border-stone-400">
+                </div>
+            </div>
+            <button onclick="saveEntry()" class="w-full bg-stone-800 text-white font-medium rounded-lg py-2.5 text-sm hover:bg-stone-700 transition mt-2">
+                加入手帳
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 資料管理彈窗 -->
+<div id="data-modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-xs z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-xl border border-stone-100 overflow-y-auto max-h-[85vh]" id="data-modal-content">
+        <div class="flex justify-between items-center mb-4 pb-2 border-b border-stone-100">
+            <h3 class="text-base font-bold text-stone-800">資料管理與手帳備份</h3>
+            <button onclick="closeModal('data-modal', 'data-modal-content')" class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg">
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
         
-        <div class="space-y-6">
+        <div class="space-y-5">
             <div>
-                <div class="flex items-center gap-2 mb-1.5">
-                    <i class="ph-fill ph-magic-wand text-indigo-500 text-lg"></i>
-                    <h4 class="font-bold text-slate-800">AI 紀錄同步</h4>
-                </div>
-                <p class="text-xs text-slate-500 mb-3 leading-relaxed">貼上 Markdown 表格，支援 7 欄新架構 (含熱量與蛋白質)，系統將自動增量與雲端同步更新。</p>
-                <textarea id="import-text" rows="4" class="w-full p-4 text-sm bg-slate-50 border border-slate-200 rounded-xl mb-3 focus:ring-2 focus:ring-slate-900 outline-none placeholder:text-slate-400 transition-all resize-none" placeholder="在此貼上表格內容..."></textarea>
-                <button onclick="handleTextImport()" class="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2">
+                <h4 class="text-xs font-bold text-stone-700 mb-1">貼上 Markdown 筆記同步</h4>
+                <p class="text-[11px] text-stone-400 mb-2">可直接將表格貼在下方，系統會自動整理並同步到資料庫。</p>
+                <textarea id="import-text" rows="3" class="w-full p-3 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-none focus:border-stone-400 resize-none" placeholder="貼上表格內容..."></textarea>
+                <button onclick="handleTextImport()" class="w-full mt-2 py-2 bg-stone-800 text-white text-xs font-medium rounded-lg hover:bg-stone-700 transition">
                     執行同步更新
                 </button>
             </div>
 
-            <div>
-                <h4 class="text-[11px] font-bold text-slate-400 mb-3 tracking-widest uppercase ml-1">進階選項與備份</h4>
-                <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-                    <button onclick="exportData()" class="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-100 transition-colors text-left active:bg-slate-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-100">
-                                <i class="ph ph-download-simple text-slate-600 text-lg"></i>
-                            </div>
-                            <span class="text-sm font-bold text-slate-700">匯出 JSON 備份檔</span>
-                        </div>
-                        <i class="ph ph-caret-right text-slate-400"></i>
+            <div class="pt-3 border-t border-stone-100">
+                <h4 class="text-xs font-bold text-stone-700 mb-2">備份與重置</h4>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportData()" class="p-2.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-lg text-xs text-stone-700 font-medium text-center transition">
+                        匯出手帳備份 (JSON)
                     </button>
                     <input type="file" id="json-upload" accept=".json" class="hidden" onchange="handleJSONImport(event)">
-                    <button onclick="document.getElementById('json-upload').click()" class="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-100 transition-colors text-left active:bg-slate-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-100">
-                                <i class="ph ph-upload-simple text-slate-600 text-lg"></i>
-                            </div>
-                            <span class="text-sm font-bold text-slate-700">還原 JSON 備份檔</span>
-                        </div>
-                        <i class="ph ph-caret-right text-slate-400"></i>
+                    <button onclick="document.getElementById('json-upload').click()" class="p-2.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-lg text-xs text-stone-700 font-medium text-center transition">
+                        還原手帳備份
                     </button>
                 </div>
-                
-                <button onclick="clearAllData()" class="w-full mt-4 p-4 rounded-2xl text-red-500 font-bold bg-red-50 hover:bg-red-100 active:scale-[0.98] transition-all text-sm border border-red-100 flex justify-center items-center gap-2">
-                    <i class="ph-fill ph-warning-circle text-lg"></i> 清空所有歷史資料
+                <button onclick="clearAllData()" class="w-full mt-3 p-2 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-medium transition text-center">
+                    清空所有歷史紀錄
                 </button>
             </div>
         </div>
@@ -272,7 +241,6 @@
 </div>
 
 <script>
-    // 1. Firebase 初始化
     const firebaseConfig = {
         apiKey: "AIzaSyC263lrmHJICThOoMlR4JacvnIJJ6ExxzA",
         authDomain: "diet-tracker-20260819.firebaseapp.com",
@@ -290,10 +258,8 @@
     };
     const DAILY_WATER_GOAL = 2000;
 
-    // 2. 雲端資料同步讀取函數 (已修正時間格式與排序)
     async function syncFromFirebase() {
         try {
-            // 單純撈取資料，避免 Firebase 索引報錯
             const snapshot = await db.collection('diet_records').get();
             const cloudData = [];
             
@@ -301,13 +267,10 @@
                 const data = doc.data();
                 let timeStr = new Date().toISOString();
                 
-                // 增強時間格式相容性（防範 Make.com 寫入字串格式導致的崩潰）
                 if (data.createdAt) {
                     if (typeof data.createdAt.toDate === 'function') {
-                        // 如果是標準 Firebase Timestamp
                         timeStr = data.createdAt.toDate().toISOString();
                     } else {
-                        // 如果是 Make.com 傳來的時間字串
                         timeStr = new Date(data.createdAt).toISOString();
                     }
                 }
@@ -321,16 +284,13 @@
                     protein: parseInt(data.protein) || 0,
                     analysis: data.analysis || '',
                     advice: data.advice || '',
-                    context: 'LINE 同步',
+                    context: data.context || 'LINE 同步',
                     timestamp: timeStr
                 });
             });
 
-            // 合併新舊資料並去重複
             const combined = [...cloudData, ...state.entries];
             const uniqueEntries = Array.from(new Map(combined.map(item => [item.id, item])).values());
-            
-            // 統一由前端進行時間排序（最新在上）
             state.entries = uniqueEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             saveData();
             renderDashboard();
@@ -341,16 +301,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        if(state.entries.length === 0 && localStorage.getItem('diet_entries_v3')) {
-            state.entries = JSON.parse(localStorage.getItem('diet_entries_v3'));
-            saveData();
-        }
         updateDate(); 
         renderDashboard(); 
         renderTimeline();
         renderScaleData();
-        
-        // 啟動 Firebase 雲端同步
         syncFromFirebase();
     });
 
@@ -362,7 +316,6 @@
     function openScaleModal() {
         const m = document.getElementById('scale-modal');
         const c = document.getElementById('scale-modal-content');
-        
         if (state.scaleData.length > 0) {
             const latest = state.scaleData[0];
             document.getElementById('input-weight').value = latest.weight || '';
@@ -373,9 +326,8 @@
             document.getElementById('input-fat').value = '';
             document.getElementById('input-waist').value = '';
         }
-
         m.classList.remove('hidden');
-        setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }, 10);
+        setTimeout(() => { m.classList.remove('opacity-0'); }, 10);
     }
 
     function saveScaleData() {
@@ -410,24 +362,20 @@
 
     function renderScaleData() {
         if (state.scaleData.length === 0) return;
-        
         const latest = state.scaleData[0];
-        document.getElementById('display-weight').textContent = latest.weight ? latest.weight : '-';
-        document.getElementById('display-fat').textContent = latest.fat ? latest.fat + '%' : '-';
-        document.getElementById('display-waist').textContent = latest.waist ? latest.waist : '-';
-        
+        document.getElementById('display-weight').textContent = latest.weight ? latest.weight + ' kg' : '-';
+        document.getElementById('display-fat').textContent = latest.fat ? latest.fat + ' %' : '-';
+        document.getElementById('display-waist').textContent = latest.waist ? latest.waist + ' cm' : '-';
         const dateObj = new Date(latest.date);
-        document.getElementById('scale-date').textContent = `最後更新：${dateObj.getMonth()+1}/${dateObj.getDate()}`;
+        document.getElementById('scale-date').textContent = `最後記錄：${dateObj.getMonth()+1}/${dateObj.getDate()}`;
     }
 
     function openDataModal() {
         const m = document.getElementById('data-modal');
-        const c = document.getElementById('data-modal-content');
         m.classList.remove('hidden');
-        setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }, 10);
+        setTimeout(() => { m.classList.remove('opacity-0'); }, 10);
     }
 
-    // 4. 支援 Firebase 雲端同步的 Markdown 匯入功能
     async function handleTextImport() {
         const text = document.getElementById('import-text').value;
         if (!text.trim()) { alert('請先貼上資料。'); return; }
@@ -456,7 +404,6 @@
             if (dateMatch) {
                 const dateStr = dateMatch[1].replace(/\//g, '-');
                 const fullDateString = row[0];
-                
                 let category = '點心/其他'; let timeStr = '15:00';
                 
                 if (fullDateString.includes('早')) { category = '早餐'; timeStr = '08:00'; }
@@ -466,7 +413,6 @@
                 
                 const timestamp = new Date(`${dateStr}T${timeStr}:00`).toISOString();
                 const content = row[2] || '未紀錄內容';
-                
                 let calories = 0, protein = 0, analysis = '', advice = '';
                 
                 if (row.length >= 7 && !isNaN(parseInt(row[3]))) {
@@ -506,7 +452,6 @@
                 if (existingIndex !== -1 && newEntry.type === 'meal') {
                     newEntry.id = state.entries[existingIndex].id;
                     state.entries[existingIndex] = newEntry; 
-                    
                     const docRef = db.collection('diet_records').doc(newEntry.id);
                     batch.set(docRef, firebaseData, { merge: true });
                     updatedCount++;
@@ -521,34 +466,31 @@
         
         if (addedCount > 0 || updatedCount > 0) {
             try {
-                document.getElementById('import-text').value = '雲端同步中，請稍候...';
+                document.getElementById('import-text').value = '手帳更新中...';
                 await batch.commit();
                 saveData();
-                alert(`匯入與雲端同步完成！\n新增紀錄：${addedCount} 筆\n覆蓋更新舊紀錄：${updatedCount} 筆`);
+                alert(`同步完成！\n新增：${addedCount} 筆\n更新：${updatedCount} 筆`);
                 location.reload();
             } catch (error) {
-                console.error("雲端批次寫入失敗:", error);
-                alert("資料庫同步失敗，請確認網路狀態！");
+                console.error("寫入失敗:", error);
+                alert("同步失敗，請確認網路連線。");
             }
         } else {
-            alert('沒有讀取到有效資料。');
+            alert('未讀取到有效的表格格式。');
         }
     }
 
     function exportData() {
         const backupData = { meals: state.entries, scale: state.scaleData };
         const dataStr = JSON.stringify(backupData, null, 2); 
-        
         const blob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const exportFileDefaultName = `diet_backup_${new Date().toISOString().split('T')[0]}.json`;
-        
+        const exportFileDefaultName = `diet_journal_${new Date().toISOString().split('T')[0]}.json`;
         let linkElement = document.createElement('a');
         linkElement.setAttribute('href', url);
         linkElement.setAttribute('download', exportFileDefaultName);
         document.body.appendChild(linkElement); 
         linkElement.click();
-        
         document.body.removeChild(linkElement);
         URL.revokeObjectURL(url); 
     }
@@ -568,15 +510,15 @@
                 }
                 saveData();
                 localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
-                alert('備份還原成功！');
+                alert('手帳資料已成功還原！');
                 location.reload();
-            } catch (err) { alert('檔案格式錯誤。'); }
+            } catch (err) { alert('檔案格式不正確。'); }
         };
         reader.readAsText(file);
     }
 
     function clearAllData() {
-        if(confirm('警告：確定要刪除所有紀錄嗎？此動作無法復原。')) {
+        if(confirm('確定要清空所有的手帳紀錄嗎？此操作無法還原。')) {
             state.entries = []; state.scaleData = [];
             saveData(); localStorage.removeItem('scale_entries_v2');
             location.reload();
@@ -586,7 +528,6 @@
     function addWater() {
         const entry = { id: Date.now().toString(), type: 'water', title: '喝水', amount: 250, timestamp: new Date().toISOString() };
         state.entries.unshift(entry); saveData(); renderDashboard(); renderTimeline();
-        if (navigator.vibrate) { navigator.vibrate(50); }
     }
 
     function saveEntry() {
@@ -596,12 +537,7 @@
         const cals = parseInt(document.getElementById('entry-cals').value) || 0;
         const protein = parseInt(document.getElementById('entry-protein').value) || 0;
         
-        if (!content) {
-            const inputField = document.getElementById('entry-content');
-            inputField.classList.add('border-red-500', 'bg-red-50');
-            setTimeout(() => inputField.classList.remove('border-red-500', 'bg-red-50'), 1500);
-            return;
-        }
+        if (!content) return;
         
         const entry = { 
             id: Date.now().toString(), 
@@ -616,9 +552,8 @@
         state.entries.unshift(entry); saveData(); closeModal('entry-modal', 'modal-content'); renderDashboard(); renderTimeline();
     }
 
-    // 3. 雲端同步刪除函數
     async function deleteEntry(id) {
-        if(confirm('確定要刪除這筆紀錄嗎？')) {
+        if(confirm('要從手帳中移除這筆紀錄嗎？')) {
             try {
                 await db.collection('diet_records').doc(id).delete();
                 state.entries = state.entries.filter(e => e.id !== id);
@@ -627,7 +562,6 @@
                 renderTimeline();
             } catch (error) {
                 console.error("刪除失敗:", error);
-                alert("雲端刪除失敗，請確認網路連線狀態");
             }
         }
     }
@@ -649,7 +583,6 @@
         
         document.getElementById('total-cals').textContent = totalCals;
         document.getElementById('total-protein').textContent = totalProtein;
-
         document.getElementById('water-text').textContent = `${totalWater} / ${DAILY_WATER_GOAL} ml`;
         const waterPercentage = Math.min((totalWater / DAILY_WATER_GOAL) * 100, 100);
         document.getElementById('water-bar').style.width = `${waterPercentage}%`;
@@ -657,11 +590,10 @@
 
     function renderTimeline() {
         const container = document.getElementById('timeline-container');
-        
         const sortedEntries = [...state.entries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         if (sortedEntries.length === 0) {
-            container.innerHTML = `<div class="text-center py-12 bg-slate-50 md:bg-white rounded-2xl border border-dashed border-slate-200"><i class="ph ph-note-blank text-4xl text-slate-300 mb-2"></i><p class="text-sm text-slate-400 font-medium">尚無紀錄，點擊左下角齒輪匯入資料</p></div>`;
+            container.innerHTML = `<div class="text-center py-12 text-stone-400 text-sm font-medium"><i class="ph ph-notebook text-3xl mb-2 text-stone-300"></i><p>手帳尚無內容，可透過 LINE 傳送或手動新增。</p></div>`;
             return;
         }
 
@@ -685,7 +617,6 @@
             }
             
             const weekObj = weeks.get(weekKey);
-            
             if (!weekObj.days.has(dateStr)) {
                 weekObj.days.set(dateStr, { cals: 0, protein: 0, entries: [] });
             }
@@ -706,78 +637,94 @@
         let htmlContent = '';
 
         Array.from(weeks.values()).sort((a, b) => b.start - a.start).forEach(week => {
-            
             const startDate = new Date(week.start);
             const endDate = new Date(week.start);
             endDate.setDate(endDate.getDate() + 6);
             const weekLabel = `${startDate.getMonth()+1}/${startDate.getDate()} - ${endDate.getMonth()+1}/${endDate.getDate()}`;
             
+            // 簡約的手帳風週結算
             htmlContent += `
-            <div class="mb-4 mt-6 p-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-lg text-white relative overflow-hidden">
-                <div class="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 rounded-full bg-slate-700 opacity-50 blur-xl"></div>
-                <div class="relative z-10">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-center gap-2">
-                            <i class="ph-fill ph-calendar-check text-indigo-400 text-lg"></i>
-                            <h3 class="font-bold text-sm tracking-wide">當週累計</h3>
-                        </div>
-                        <span class="text-xs font-medium bg-slate-700/80 px-2 py-1 rounded-md text-slate-300">${weekLabel}</span>
+            <div class="mb-5 p-4 bg-stone-50 rounded-xl border border-stone-200/80 text-stone-700">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-stone-500 flex items-center gap-1.5">
+                        <i class="ph ph-calendar text-sm"></i> 當週小結
+                    </span>
+                    <span class="text-xs text-stone-400 font-medium">${weekLabel}</span>
+                </div>
+                <div class="flex gap-6 mt-1">
+                    <div>
+                        <span class="text-[11px] text-stone-400">總攝取：</span>
+                        <span class="text-sm font-bold text-stone-800">${week.totalCals} 大卡</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-xs text-slate-400 mb-1">熱量</p>
-                            <p class="text-2xl font-bold">${week.totalCals} <span class="text-xs font-normal text-slate-400">kcal</span></p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400 mb-1">蛋白質</p>
-                            <p class="text-2xl font-bold text-emerald-400">${week.totalProtein} <span class="text-xs font-normal text-slate-400">g</span></p>
-                        </div>
+                    <div>
+                        <span class="text-[11px] text-stone-400">總蛋白質：</span>
+                        <span class="text-sm font-bold text-stone-800">${week.totalProtein} 克</span>
                     </div>
                 </div>
             </div>`;
             
             Array.from(week.days.entries()).forEach(([dateStr, day]) => {
-                
                 htmlContent += `
-                <div class="flex justify-between items-center pt-4 pb-3 mb-2 border-b border-slate-100">
-                    <span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full shadow-sm">${dateStr}</span>
-                    <div class="flex gap-3 text-[12px] font-bold">
-                        <span class="text-slate-700">${day.cals} <span class="text-[10px] font-normal text-slate-400">kcal</span></span>
-                        <span class="text-emerald-600">${day.protein} <span class="text-[10px] font-normal text-slate-400">g</span></span>
+                <div class="flex justify-between items-center pt-3 pb-2 mb-2 border-b border-stone-100">
+                    <span class="text-xs font-bold text-stone-600 bg-stone-100 px-2.5 py-1 rounded-md">${dateStr}</span>
+                    <div class="flex gap-3 text-xs text-stone-500 font-medium">
+                        <span>${day.cals} 大卡</span>
+                        <span>${day.protein}g 蛋白質</span>
                     </div>
                 </div>`;
                 
-                day.entries.forEach(({ entry, index }) => {
+                day.entries.forEach(({ entry }) => {
                     const timeString = new Date(entry.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-                    const animClass = index === 0 ? 'animate-slide-up' : '';
                     
                     if (entry.type === 'water') {
-                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3 ${animClass}"><div class="w-12 h-12 rounded-xl bg-blue-100/50 flex items-center justify-center flex-shrink-0 text-blue-500"><i class="ph-fill ph-drop text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">喝水</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-blue-600 text-sm font-bold mt-1">+${entry.amount} ml</p></div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                        htmlContent += `
+                        <div class="flex items-center gap-3 p-3 bg-white border border-stone-100 rounded-xl shadow-xs mb-2 group">
+                            <div class="w-8 h-8 rounded-lg bg-stone-50 flex items-center justify-center text-amber-700">
+                                <i class="ph ph-drop text-base"></i>
+                            </div>
+                            <div class="flex-1 flex justify-between items-center">
+                                <span class="text-xs font-medium text-stone-700">補充水分</span>
+                                <span class="text-xs font-bold text-stone-600">+${entry.amount} ml</span>
+                            </div>
+                            <button onclick="deleteEntry('${entry.id}')" class="text-stone-300 hover:text-stone-500 opacity-0 group-hover:opacity-100 transition p-1">
+                                <i class="ph ph-trash text-sm"></i>
+                            </button>
+                        </div>`;
                     } else {
-                        let icon = 'ph-bowl-food', iconColor = 'text-indigo-500', bgColor = 'bg-indigo-100/50';
-                        if (entry.category === '早餐') { icon = 'ph-coffee'; iconColor = 'text-orange-500'; bgColor = 'bg-orange-100/50'; }
-                        if (entry.category === '午餐') { icon = 'ph-hamburger'; iconColor = 'text-emerald-500'; bgColor = 'bg-emerald-100/50'; }
-                        if (entry.category === '宵夜') { icon = 'ph-moon-stars'; iconColor = 'text-purple-500'; bgColor = 'bg-purple-100/50'; }
-                        
-                        const contextHtml = entry.context ? `<span class="inline-block mt-3 mr-2 px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-md text-[11px] font-bold tracking-wide shadow-sm">📍 ${entry.context}</span>` : '';
+                        const contextHtml = entry.context ? `<span class="text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded mr-2 font-normal">${entry.context}</span>` : '';
                         
                         let nutritionHtml = '';
                         if (entry.calories > 0 || entry.protein > 0) {
-                            nutritionHtml += `<div class="inline-flex gap-2 mt-3 align-middle">`;
-                            if (entry.calories > 0) nutritionHtml += `<span class="px-2 py-1 bg-slate-800 text-white rounded-md text-[11px] font-bold tracking-wide shadow-sm">${entry.calories} kcal</span>`;
-                            if (entry.protein > 0) nutritionHtml += `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-md text-[11px] font-bold tracking-wide shadow-sm">${entry.protein}g 蛋白</span>`;
+                            nutritionHtml = `<div class="text-xs text-stone-500 mt-1 space-x-2">`;
+                            if (entry.calories > 0) nutritionHtml += `<span>約 ${entry.calories} 大卡</span>`;
+                            if (entry.protein > 0) nutritionHtml += `<span>• 蛋白質 ${entry.protein}g</span>`;
                             nutritionHtml += `</div>`;
                         }
                         
-                        let analysisHtml = '';
+                        let notesHtml = '';
                         if (entry.analysis || entry.advice) {
-                            analysisHtml = `<div class="mt-4 p-4 bg-white rounded-xl border-l-4 border-indigo-400 text-sm space-y-2 shadow-sm">`;
-                            if (entry.analysis) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-indigo-600">衝擊分析：</strong>${entry.analysis}</p>`;
-                            if (entry.advice) analysisHtml += `<p class="text-slate-700 leading-relaxed"><strong class="text-emerald-600">優化建議：</strong>${entry.advice}</p>`;
-                            analysisHtml += `</div>`;
+                            notesHtml = `<div class="mt-3 p-3 bg-stone-50/80 rounded-lg text-xs space-y-1.5 border border-stone-100/60 leading-relaxed text-stone-600">`;
+                            if (entry.analysis) notesHtml += `<p><span class="font-bold text-stone-700">💡 營養觀察：</span>${entry.analysis}</p>`;
+                            if (entry.advice) notesHtml += `<p><span class="font-bold text-stone-700">🥗 微調建議：</span>${entry.advice}</p>`;
+                            notesHtml += `</div>`;
                         }
 
-                        htmlContent += `<div class="flex items-start gap-4 p-4 bg-white md:bg-slate-50 border border-slate-100 rounded-2xl shadow-sm relative group mb-3 hover:shadow-md transition-shadow ${animClass}"><div class="w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0 ${iconColor}"><i class="ph-fill ${icon} text-2xl"></i></div><div class="flex-1 pt-0.5"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-slate-800 text-sm">${entry.category}</h4><span class="text-xs font-medium text-slate-400">${timeString}</span></div><p class="text-slate-900 font-bold leading-relaxed text-base">${entry.title}</p><div>${contextHtml}${nutritionHtml}</div>${analysisHtml}</div><button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-slate-300 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><i class="ph-fill ph-trash"></i></button></div>`;
+                        htmlContent += `
+                        <div class="p-4 bg-white border border-stone-150 rounded-xl shadow-xs mb-3 group transition hover:border-stone-300">
+                            <div class="flex justify-between items-start mb-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-stone-700 bg-stone-100 px-2 py-0.5 rounded">${entry.category}</span>
+                                    <span class="text-xs text-stone-400">${timeString}</span>
+                                </div>
+                                <button onclick="deleteEntry('${entry.id}')" class="text-stone-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition p-1">
+                                    <i class="ph ph-trash text-sm"></i>
+                                </button>
+                            </div>
+                            <h3 class="text-sm font-bold text-stone-800 mt-1">${entry.title}</h3>
+                            <div class="mt-1">${contextHtml}</div>
+                            ${nutritionHtml}
+                            ${notesHtml}
+                        </div>`;
                     }
                 });
             });
@@ -787,24 +734,26 @@
     }
 
     function openModal(type, category) {
-        document.getElementById('modal-title').textContent = `紀錄${category}`;
+        document.getElementById('modal-title').textContent = `記錄${category}`;
         document.getElementById('entry-type').value = category;
         document.getElementById('entry-content').value = '';
         document.getElementById('entry-context').value = '';
         document.getElementById('entry-cals').value = '';
         document.getElementById('entry-protein').value = '';
-        const m = document.getElementById('entry-modal'); const c = document.getElementById('modal-content');
-        m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); document.getElementById('entry-content').focus(); }, 10);
+        const m = document.getElementById('entry-modal');
+        m.classList.remove('hidden'); 
+        setTimeout(() => { m.classList.remove('opacity-0'); document.getElementById('entry-content').focus(); }, 10);
     }
 
-    function closeModal(modalId, contentId) {
-        const m = document.getElementById(modalId); const c = document.getElementById(contentId);
-        m.classList.add('opacity-0'); c.classList.add('translate-y-full'); setTimeout(() => { m.classList.add('hidden'); }, 300);
+    function closeModal(modalId) {
+        const m = document.getElementById(modalId);
+        m.classList.add('opacity-0'); 
+        setTimeout(() => { m.classList.add('hidden'); }, 200);
     }
 
-    document.getElementById('entry-modal').addEventListener('click', (e) => { if (e.target.id === 'entry-modal') closeModal('entry-modal', 'modal-content'); });
-    document.getElementById('data-modal').addEventListener('click', (e) => { if (e.target.id === 'data-modal') closeModal('data-modal', 'data-modal-content'); });
-    document.getElementById('scale-modal').addEventListener('click', (e) => { if (e.target.id === 'scale-modal') closeModal('scale-modal', 'scale-modal-content'); });
+    document.getElementById('entry-modal').addEventListener('click', (e) => { if (e.target.id === 'entry-modal') closeModal('entry-modal'); });
+    document.getElementById('data-modal').addEventListener('click', (e) => { if (e.target.id === 'data-modal') closeModal('data-modal'); });
+    document.getElementById('scale-modal').addEventListener('click', (e) => { if (e.target.id === 'scale-modal') closeModal('scale-modal'); });
 </script>
 </body>
 </html>
