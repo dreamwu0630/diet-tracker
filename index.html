@@ -125,7 +125,7 @@
     <!-- 右側：分析圖表與飲食時間軸 -->
     <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-8 min-h-[80vh]">
         
-        <!-- 圖表分析區塊（溫潤大地配色：整日餐別堆疊柱狀圖） -->
+        <!-- 圖表分析區塊（清新低飽和粉質配色：整日餐別堆疊柱狀圖） -->
         <div class="mb-8 p-5 bg-stone-50/90 rounded-2xl border border-stone-200">
             <div class="flex flex-col gap-3 mb-4">
                 <div class="flex justify-between items-center">
@@ -145,7 +145,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-stone-200/60">
                     <!-- 數值模式：熱量 vs 蛋白質 -->
                     <div class="flex items-center gap-1 bg-stone-200/60 p-1 rounded-lg text-xs font-bold">
-                        <button onclick="setMetricMode('cal')" id="btn-metric-cal" class="px-2.5 py-1 rounded-md bg-white text-stone-800 shadow-2xs">熱量 (kcal)</button>
+                        <button onclick="setMetricMode('cal')" id="btn-metric-cal" class="px-2.5 py-1 rounded-md bg-white text-stone-800 shadow-2xs font-bold">熱量 (kcal)</button>
                         <button onclick="setMetricMode('pro')" id="btn-metric-pro" class="px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800 font-medium">蛋白質 (g)</button>
                     </div>
                     
@@ -166,7 +166,7 @@
             </div>
             
             <div class="flex justify-between items-center text-xs text-stone-400 mt-2.5 px-1">
-                <span id="chart-subtext">大地色系堆疊：長條高度為當日總量，內部為各餐佔比</span>
+                <span id="chart-subtext">粉質低飽和堆疊：長條高度為當日總量，內部為各餐佔比</span>
                 <span id="chart-avg-text" class="font-medium text-stone-600"></span>
             </div>
         </div>
@@ -371,7 +371,7 @@
     }
 
     // ==========================================
-    // 圖表控制器（方案一：日系大地色手帳風）
+    // 圖表控制器（方案二：清新低飽和粉質系）
     // ==========================================
     function setDaysFilter(days) {
         currentDaysFilter = days;
@@ -474,13 +474,13 @@
         const metricUnit = isCal ? 'kcal' : 'g';
         const metricTitle = isCal ? '熱量' : '蛋白質';
 
-        // 方案一：溫潤紙質手帳系配色 (大地質樸調)
-        const earthPalette = {
-            '早餐': { bg: 'rgba(230, 194, 128, 0.88)', border: '#CDB075' },    // 暖米黃
-            '午餐': { bg: 'rgba(143, 169, 152, 0.88)', border: '#7A9482' },    // 鼠尾草綠
-            '晚餐': { bg: 'rgba(125, 116, 109, 0.88)', border: '#665F59' },    // 冷茶灰
-            '宵夜': { bg: 'rgba(163, 144, 162, 0.88)', border: '#8A7689' },    // 薰衣草灰
-            '點心/其他': { bg: 'rgba(200, 194, 188, 0.82)', border: '#AFA8A2' } // 柔霧暖灰
+        // 方案二：清新低飽和粉質系 (Pastel 色調)
+        const pastelPalette = {
+            '早餐': { bg: 'rgba(244, 194, 161, 0.90)', border: '#E0AA85' },    // 杏仁粉橘
+            '午餐': { bg: 'rgba(168, 213, 186, 0.90)', border: '#8EBFA3' },    // 薄荷粉綠
+            '晚餐': { bg: 'rgba(155, 183, 212, 0.90)', border: '#7E9EB8' },    // 靜謐灰藍
+            '宵夜': { bg: 'rgba(203, 180, 212, 0.90)', border: '#B394BA' },    // 藍莓粉紫
+            '點心/其他': { bg: 'rgba(216, 210, 201, 0.85)', border: '#C2BBB1' } // 淺燕麥白
         };
 
         let datasets = [];
@@ -492,8 +492,8 @@
                     type: 'bar',
                     label: meal,
                     data: dayList.map(d => isCal ? (d.meals[meal]?.cal || 0) : (d.meals[meal]?.pro || 0)),
-                    backgroundColor: earthPalette[meal].bg,
-                    borderColor: earthPalette[meal].border,
+                    backgroundColor: pastelPalette[meal].bg,
+                    borderColor: pastelPalette[meal].border,
                     borderWidth: 1,
                     stack: 'dailyStack',
                     borderRadius: 4,
@@ -507,8 +507,8 @@
                 type: 'bar',
                 label: `${selectedMeal}${metricTitle}`,
                 data: dayList.map(d => isCal ? (d.meals[selectedMeal]?.cal || 0) : (d.meals[selectedMeal]?.pro || 0)),
-                backgroundColor: earthPalette[selectedMeal]?.bg || 'rgba(143, 169, 152, 0.88)',
-                borderColor: earthPalette[selectedMeal]?.border || '#7A9482',
+                backgroundColor: pastelPalette[selectedMeal]?.bg || 'rgba(168, 213, 186, 0.90)',
+                borderColor: pastelPalette[selectedMeal]?.border || '#8EBFA3',
                 borderWidth: 1,
                 borderRadius: 5,
                 maxBarThickness: 28
