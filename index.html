@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- 引入 Chart.js 圖表庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -120,8 +122,43 @@
         </div>
     </div>
 
-    <!-- 右側：飲食手帳時間軸 -->
+    <!-- 右側：飲食手帳時間軸與分析圖表 -->
     <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-8 min-h-[80vh]">
+        
+        <!-- 圖表分析區塊（醫師會診/自我趨勢分析） -->
+        <div class="mb-8 p-5 bg-stone-50/90 rounded-2xl border border-stone-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-stone-800 tracking-tight flex items-center gap-2">
+                        <i class="ph ph-chart-line-up text-xl text-amber-700"></i> 飲食代謝趨勢分析
+                    </h2>
+                    <p class="text-xs text-stone-400 mt-0.5">即時統計每日與各餐熱量、蛋白質走勢，方便門診快速向醫師呈現</p>
+                </div>
+                <!-- 篩選按鈕列 -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar" id="meal-filter-btns">
+                    <button onclick="setMealFilter('all')" data-filter="all" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-stone-800 text-white transition">全部總計</button>
+                    <button onclick="setMealFilter('stack')" data-filter="stack" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-100 transition">餐別堆疊</button>
+                    <button onclick="setMealFilter('早餐')" data-filter="早餐" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-100 transition">早餐</button>
+                    <button onclick="setMealFilter('午餐')" data-filter="午餐" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-100 transition">午餐</button>
+                    <button onclick="setMealFilter('晚餐')" data-filter="晚餐" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-100 transition">晚餐</button>
+                    <button onclick="setMealFilter('宵夜')" data-filter="宵夜" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-100 transition">宵夜</button>
+                </div>
+            </div>
+
+            <!-- 圖表畫布容器 -->
+            <div class="relative w-full h-64 md:h-72 bg-white rounded-xl p-3 border border-stone-200/80 shadow-2xs">
+                <canvas id="dietTrendChart"></canvas>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-between text-xs text-stone-500 mt-3 px-1 gap-2">
+                <div class="flex items-center gap-4">
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-600 inline-block"></span> 熱量 (左軸 kcal)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span> 蛋白質 (右軸 g)</span>
+                </div>
+                <span class="text-stone-400">綠色虛線：每日 70g 蛋白質保肌基準</span>
+            </div>
+        </div>
+
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-stone-100">
             <h2 class="text-base font-bold text-stone-700 tracking-wider flex items-center gap-2">
                 <i class="ph ph-book-open text-xl text-stone-400"></i> 飲食紀錄時間軸
@@ -141,7 +178,7 @@
     <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-7 shadow-xl border border-stone-100" id="scale-modal-content">
         <div class="flex justify-between items-center mb-5">
             <h3 class="text-lg font-bold text-stone-800">記錄體態數據</h3>
-            <button onclick="closeModal('scale-modal', 'scale-modal-content')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
+            <button onclick="closeModal('scale-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
                 <i class="ph ph-x text-xl"></i>
             </button>
         </div>
@@ -170,7 +207,7 @@
     <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-7 shadow-xl border border-stone-100" id="modal-content">
         <div class="flex justify-between items-center mb-5">
             <h3 class="text-lg font-bold text-stone-800" id="modal-title">手動紀錄</h3>
-            <button onclick="closeModal('entry-modal', 'modal-content')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
+            <button onclick="closeModal('entry-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
                 <i class="ph ph-x text-xl"></i>
             </button>
         </div>
@@ -206,7 +243,7 @@
     <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-7 shadow-xl border border-stone-100 overflow-y-auto max-h-[85vh]" id="data-modal-content">
         <div class="flex justify-between items-center mb-5 pb-3 border-b border-stone-100">
             <h3 class="text-lg font-bold text-stone-800">資料管理與手帳備份</h3>
-            <button onclick="closeModal('data-modal', 'data-modal-content')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
+            <button onclick="closeModal('data-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
                 <i class="ph ph-x text-xl"></i>
             </button>
         </div>
@@ -257,6 +294,8 @@
         scaleData: JSON.parse(localStorage.getItem('scale_entries_v2')) || [] 
     };
     const DAILY_WATER_GOAL = 2000;
+    let chartInstance = null;
+    let currentMealFilter = 'all';
 
     async function syncFromFirebase() {
         try {
@@ -295,6 +334,7 @@
             saveData();
             renderDashboard();
             renderTimeline();
+            renderChart();
         } catch (error) {
             console.error("Firebase 讀取失敗:", error);
         }
@@ -305,6 +345,7 @@
         renderDashboard(); 
         renderTimeline();
         renderScaleData();
+        renderChart();
         syncFromFirebase();
     });
 
@@ -313,9 +354,212 @@
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW', options);
     }
 
+    // ==========================================
+    // 圖表分析模組 (Chart.js 整合邏輯)
+    // ==========================================
+    function setMealFilter(filter) {
+        currentMealFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if (btn.dataset.filter === filter) {
+                btn.className = 'filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-stone-800 text-white transition';
+            } else {
+                btn.className = 'filter-btn text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-100 transition';
+            }
+        });
+        renderChart();
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('dietTrendChart');
+        if (!ctx) return;
+
+        // 依日期做聚合 (由舊到新排序)
+        const dailyMap = new Map();
+        const sortedAsc = [...state.entries]
+            .filter(e => e.type === 'meal')
+            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        sortedAsc.forEach(e => {
+            const d = new Date(e.timestamp);
+            const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const label = `${d.getMonth() + 1}/${d.getDate()}`;
+            
+            if (!dailyMap.has(dateKey)) {
+                dailyMap.set(dateKey, {
+                    label: label,
+                    totalCal: 0,
+                    totalPro: 0,
+                    meals: {
+                        '早餐': { cal: 0, pro: 0 },
+                        '午餐': { cal: 0, pro: 0 },
+                        '晚餐': { cal: 0, pro: 0 },
+                        '宵夜': { cal: 0, pro: 0 },
+                        '點心/其他': { cal: 0, pro: 0 }
+                    }
+                });
+            }
+
+            const item = dailyMap.get(dateKey);
+            const cal = parseInt(e.calories) || 0;
+            const pro = parseInt(e.protein) || 0;
+            item.totalCal += cal;
+            item.totalPro += pro;
+
+            let cat = '點心/其他';
+            if (e.category && e.category.includes('早')) cat = '早餐';
+            else if (e.category && e.category.includes('午')) cat = '午餐';
+            else if (e.category && e.category.includes('晚')) cat = '晚餐';
+            else if (e.category && (e.category.includes('宵夜') || e.category.includes('夜'))) cat = '宵夜';
+
+            if (item.meals[cat]) {
+                item.meals[cat].cal += cal;
+                item.meals[cat].pro += pro;
+            } else {
+                item.meals['點心/其他'].cal += cal;
+                item.meals['點心/其他'].pro += pro;
+            }
+        });
+
+        const dayList = Array.from(dailyMap.values());
+        const labels = dayList.map(d => d.label);
+
+        let datasets = [];
+
+        if (currentMealFilter === 'all') {
+            // 全天總計：熱量柱狀圖 + 蛋白質折線圖
+            datasets = [
+                {
+                    type: 'bar',
+                    label: '每日總熱量 (kcal)',
+                    data: dayList.map(d => d.totalCal),
+                    backgroundColor: 'rgba(217, 119, 6, 0.7)',
+                    borderColor: 'rgb(180, 83, 9)',
+                    borderRadius: 6,
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'line',
+                    label: '每日蛋白質 (g)',
+                    data: dayList.map(d => d.totalPro),
+                    borderColor: 'rgb(5, 150, 105)',
+                    backgroundColor: 'rgb(5, 150, 105)',
+                    borderWidth: 2.5,
+                    tension: 0.25,
+                    pointRadius: 4,
+                    yAxisID: 'y1'
+                }
+            ];
+        } else if (currentMealFilter === 'stack') {
+            // 餐別堆疊柱狀圖 (熱量分佈) + 蛋白質總量折線
+            const colors = {
+                '早餐': 'rgba(249, 115, 22, 0.7)',
+                '午餐': 'rgba(16, 185, 129, 0.7)',
+                '晚餐': 'rgba(79, 70, 229, 0.7)',
+                '宵夜': 'rgba(147, 51, 234, 0.7)',
+                '點心/其他': 'rgba(156, 163, 175, 0.7)'
+            };
+
+            ['早餐', '午餐', '晚餐', '宵夜', '點心/其他'].forEach(meal => {
+                datasets.push({
+                    type: 'bar',
+                    label: `${meal}熱量`,
+                    data: dayList.map(d => d.meals[meal]?.cal || 0),
+                    backgroundColor: colors[meal],
+                    stack: 'meals',
+                    yAxisID: 'y'
+                });
+            });
+
+            datasets.push({
+                type: 'line',
+                label: '總蛋白質 (g)',
+                data: dayList.map(d => d.totalPro),
+                borderColor: 'rgb(5, 150, 105)',
+                backgroundColor: 'rgb(5, 150, 105)',
+                borderWidth: 2.5,
+                tension: 0.25,
+                pointRadius: 3,
+                yAxisID: 'y1'
+            });
+        } else {
+            // 單一特定餐別篩選
+            const selectedMeal = currentMealFilter;
+            datasets = [
+                {
+                    type: 'bar',
+                    label: `${selectedMeal}熱量 (kcal)`,
+                    data: dayList.map(d => d.meals[selectedMeal]?.cal || 0),
+                    backgroundColor: 'rgba(217, 119, 6, 0.7)',
+                    borderColor: 'rgb(180, 83, 9)',
+                    borderRadius: 6,
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'line',
+                    label: `${selectedMeal}蛋白質 (g)`,
+                    data: dayList.map(d => d.meals[selectedMeal]?.pro || 0),
+                    borderColor: 'rgb(5, 150, 105)',
+                    backgroundColor: 'rgb(5, 150, 105)',
+                    borderWidth: 2.5,
+                    tension: 0.25,
+                    pointRadius: 4,
+                    yAxisID: 'y1'
+                }
+            ];
+        }
+
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { size: 11, family: 'PingFang TC' } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1c1917',
+                        padding: 10,
+                        titleFont: { size: 12 },
+                        bodyFont: { size: 12 }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: '熱量 (kcal)', font: { size: 11 } },
+                        suggestedMax: 2400,
+                        grid: { color: 'rgba(0, 0, 0, 0.04)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: '蛋白質 (g)', font: { size: 11 } },
+                        suggestedMax: 100,
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    }
+
     function openScaleModal() {
         const m = document.getElementById('scale-modal');
-        const c = document.getElementById('scale-modal-content');
         if (state.scaleData.length > 0) {
             const latest = state.scaleData[0];
             document.getElementById('input-weight').value = latest.weight || '';
@@ -336,7 +580,7 @@
         const waist = parseFloat(document.getElementById('input-waist').value);
 
         if (!weight && !fat && !waist) {
-            closeModal('scale-modal', 'scale-modal-content');
+            closeModal('scale-modal');
             return;
         }
 
@@ -356,7 +600,7 @@
         }
 
         localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
-        closeModal('scale-modal', 'scale-modal-content');
+        closeModal('scale-modal');
         renderScaleData();
     }
 
@@ -549,7 +793,12 @@
             protein: protein,
             timestamp: new Date().toISOString() 
         };
-        state.entries.unshift(entry); saveData(); closeModal('entry-modal', 'modal-content'); renderDashboard(); renderTimeline();
+        state.entries.unshift(entry); 
+        saveData(); 
+        closeModal('entry-modal'); 
+        renderDashboard(); 
+        renderTimeline();
+        renderChart();
     }
 
     async function deleteEntry(id) {
@@ -560,6 +809,7 @@
                 saveData(); 
                 renderDashboard(); 
                 renderTimeline();
+                renderChart();
             } catch (error) {
                 console.error("刪除失敗:", error);
             }
@@ -642,7 +892,6 @@
             endDate.setDate(endDate.getDate() + 6);
             const weekLabel = `${startDate.getMonth()+1}/${startDate.getDate()} - ${endDate.getMonth()+1}/${endDate.getDate()}`;
             
-            // 週結算卡片字體放大
             htmlContent += `
             <div class="mb-6 p-5 bg-stone-50 rounded-xl border border-stone-200/80 text-stone-700">
                 <div class="flex justify-between items-center mb-3">
@@ -709,7 +958,6 @@
                             notesHtml += `</div>`;
                         }
 
-                        // 修改：字體放大，並將刪除按鈕常駐顯示，且顏色改為玫瑰色
                         htmlContent += `
                         <div class="p-5 bg-white border border-stone-200 rounded-xl shadow-xs mb-4 relative transition hover:border-stone-300">
                             <div class="flex justify-between items-start mb-2 pr-8">
