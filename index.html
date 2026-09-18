@@ -125,7 +125,7 @@
     <!-- 右側：分析圖表與飲食時間軸 -->
     <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-8 min-h-[80vh]">
         
-        <!-- 圖表分析區塊（已優化：純柱狀、去折線、可選天數與指標） -->
+        <!-- 圖表分析區塊（全天餐別堆疊柱狀圖） -->
         <div class="mb-8 p-5 bg-stone-50/90 rounded-2xl border border-stone-200">
             <div class="flex flex-col gap-3 mb-4">
                 <div class="flex justify-between items-center">
@@ -146,12 +146,12 @@
                     <!-- 數值模式：熱量 vs 蛋白質 -->
                     <div class="flex items-center gap-1 bg-stone-200/60 p-1 rounded-lg text-xs font-bold">
                         <button onclick="setMetricMode('cal')" id="btn-metric-cal" class="px-2.5 py-1 rounded-md bg-white text-stone-800 shadow-2xs">熱量 (kcal)</button>
-                        <button onclick="setMetricMode('pro')" id="btn-metric-pro" class="px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800">蛋白質 (g)</button>
+                        <button onclick="setMetricMode('pro')" id="btn-metric-pro" class="px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800 font-medium">蛋白質 (g)</button>
                     </div>
                     
                     <!-- 餐別篩選 -->
                     <div class="flex items-center gap-1 overflow-x-auto hide-scrollbar text-xs font-medium">
-                        <button onclick="setMealFilter('all')" data-meal="all" class="meal-btn px-2.5 py-1 rounded-lg bg-stone-800 text-white font-bold">整日總計</button>
+                        <button onclick="setMealFilter('all')" data-meal="all" class="meal-btn px-2.5 py-1 rounded-lg bg-stone-800 text-white font-bold">整日堆疊</button>
                         <button onclick="setMealFilter('早餐')" data-meal="早餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">早</button>
                         <button onclick="setMealFilter('午餐')" data-meal="午餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">午</button>
                         <button onclick="setMealFilter('晚餐')" data-meal="晚餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">晚</button>
@@ -166,7 +166,7 @@
             </div>
             
             <div class="flex justify-between items-center text-xs text-stone-400 mt-2.5 px-1">
-                <span id="chart-subtext">純長條柱狀圖顯示，無折線干擾</span>
+                <span id="chart-subtext">長條高度為當日總量，內部顏色為各餐佔比</span>
                 <span id="chart-avg-text" class="font-medium text-stone-600"></span>
             </div>
         </div>
@@ -309,7 +309,7 @@
     
     // 圖表狀態變數
     let chartInstance = null;
-    let currentDaysFilter = 14; // 預設顯示最近 14 天，避免擁擠
+    let currentDaysFilter = 14; // 預設顯示 14 天
     let currentMetricMode = 'cal'; // 'cal' (熱量) 或 'pro' (蛋白質)
     let currentMealFilter = 'all'; // 'all', '早餐', '午餐', '晚餐', '宵夜'
 
@@ -371,7 +371,7 @@
     }
 
     // ==========================================
-    // 圖表控制器（純柱狀圖、支援天數與指標切換）
+    // 圖表控制器（整日堆疊長條圖）
     // ==========================================
     function setDaysFilter(days) {
         currentDaysFilter = days;
@@ -464,7 +464,7 @@
 
         let dayList = Array.from(dailyMap.values());
 
-        // 依天數切分（如 14 天只取最後 14 筆）
+        // 依天數切分（預設最近 14 天）
         if (currentDaysFilter > 0 && dayList.length > currentDaysFilter) {
             dayList = dayList.slice(-currentDaysFilter);
         }
@@ -474,18 +474,58 @@
         const metricUnit = isCal ? 'kcal' : 'g';
         const metricTitle = isCal ? '熱量' : '蛋白質';
 
-        let chartData = [];
+        // 堆疊顏色定義（溫和日系質樸風）
+        const mealPalette = {
+            '早餐': { bg: 'rgba(234, 88, 12, 0.8)', border: 'rgb(194, 65, 12)' },    // 溫暖橘
+            '午餐': { bg: 'rgba(16, 185, 129, 0.8)', border: 'rgb(5, 150, 105)' },  // 清爽綠
+            '晚餐': { bg: 'rgba(79, 70, 229, 0.8)', border: 'rgb(67, 56, 202)' },   // 典雅藍紫
+            '宵夜': { bg: 'rgba(168, 85, 247, 0.8)', border: 'rgb(147, 51, 234)' }, // 柔紫色
+            '點心/其他': { bg: 'rgba(168, 162, 158, 0.75)', border: 'rgb(120, 113, 108)' } // 石灰灰
+        };
+
+        let datasets = [];
+
         if (currentMealFilter === 'all') {
-            chartData = dayList.map(d => isCal ? d.totalCal : d.totalPro);
+            // 整日總計模式：早、午、晚、宵夜、點心分層堆疊
+            ['早餐', '午餐', '晚餐', '宵夜', '點心/其他'].forEach(meal => {
+                datasets.push({
+                    type: 'bar',
+                    label: meal,
+                    data: dayList.map(d => isCal ? (d.meals[meal]?.cal || 0) : (d.meals[meal]?.pro || 0)),
+                    backgroundColor: mealPalette[meal].bg,
+                    borderColor: mealPalette[meal].border,
+                    borderWidth: 1,
+                    stack: 'dailyStack',
+                    borderRadius: 4,
+                    maxBarThickness: 28
+                });
+            });
         } else {
-            const mealKey = currentMealFilter;
-            chartData = dayList.map(d => isCal ? (d.meals[mealKey]?.cal || 0) : (d.meals[mealKey]?.pro || 0));
+            // 單餐過濾模式：單一餐別長條柱
+            const selectedMeal = currentMealFilter;
+            datasets.push({
+                type: 'bar',
+                label: `${selectedMeal}${metricTitle}`,
+                data: dayList.map(d => isCal ? (d.meals[selectedMeal]?.cal || 0) : (d.meals[selectedMeal]?.pro || 0)),
+                backgroundColor: mealPalette[selectedMeal]?.bg || 'rgba(217, 119, 6, 0.8)',
+                borderColor: mealPalette[selectedMeal]?.border || 'rgb(180, 83, 9)',
+                borderWidth: 1,
+                borderRadius: 5,
+                maxBarThickness: 28
+            });
         }
 
-        // 計算區間平均值
-        const validValues = chartData.filter(v => v > 0);
-        const avg = validValues.length > 0 ? Math.round(validValues.reduce((a, b) => a + b, 0) / validValues.length) : 0;
-        document.getElementById('chart-avg-text').textContent = `區間平均：約 ${avg} ${metricUnit}`;
+        // 計算區間每日總平均值
+        const totals = dayList.map(d => {
+            if (currentMealFilter === 'all') {
+                return isCal ? d.totalCal : d.totalPro;
+            } else {
+                return isCal ? (d.meals[currentMealFilter]?.cal || 0) : (d.meals[currentMealFilter]?.pro || 0);
+            }
+        }).filter(v => v > 0);
+
+        const avg = totals.length > 0 ? Math.round(totals.reduce((a, b) => a + b, 0) / totals.length) : 0;
+        document.getElementById('chart-avg-text').textContent = `區間日均：約 ${avg} ${metricUnit}`;
 
         if (chartInstance) {
             chartInstance.destroy();
@@ -493,45 +533,49 @@
 
         chartInstance = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: `${currentMealFilter === 'all' ? '整日' : currentMealFilter}${metricTitle} (${metricUnit})`,
-                    data: chartData,
-                    backgroundColor: isCal ? 'rgba(217, 119, 6, 0.75)' : 'rgba(5, 150, 105, 0.75)',
-                    borderColor: isCal ? 'rgb(180, 83, 9)' : 'rgb(4, 120, 87)',
-                    borderWidth: 1,
-                    borderRadius: 5,
-                    maxBarThickness: 28
-                }]
-            },
+            data: { labels: labels, datasets: datasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: (currentMealFilter === 'all'),
+                        position: 'top',
+                        labels: { boxWidth: 10, font: { size: 10, family: 'PingFang TC' }, padding: 8 }
+                    },
                     tooltip: {
                         backgroundColor: '#1c1917',
                         padding: 8,
                         titleFont: { size: 12 },
-                        bodyFont: { size: 12 },
-                        displayColors: false,
+                        bodyFont: { size: 11 },
                         callbacks: {
                             label: function(context) {
-                                return `${context.parsed.y} ${metricUnit}`;
+                                if (context.parsed.y === 0) return null; // 該餐為 0 不顯示
+                                return ` ${context.dataset.label}: ${context.parsed.y} ${metricUnit}`;
+                            },
+                            afterBody: function(contexts) {
+                                if (currentMealFilter === 'all') {
+                                    const total = contexts.reduce((sum, item) => sum + item.parsed.y, 0);
+                                    return `──────\n當日總計: ${total} ${metricUnit}`;
+                                }
+                                return '';
                             }
                         }
                     }
                 },
                 scales: {
                     x: {
+                        stacked: true,
                         grid: { display: false },
                         ticks: { font: { size: 11, family: 'PingFang TC' }, color: '#78716c' }
                     },
                     y: {
+                        stacked: true,
                         beginAtZero: true,
                         grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                        ticks: { font: { size: 10 }, color: '#78716c' }
+                        ticks: { font: { size: 10 }, color: '#78716c' },
+                        title: { display: true, text: metricUnit, font: { size: 10 } }
                     }
                 }
             }
