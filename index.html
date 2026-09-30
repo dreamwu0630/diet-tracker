@@ -125,23 +125,30 @@
     <!-- 右側：分析圖表與飲食時間軸 -->
     <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-8 min-h-[80vh]">
         
-        <!-- 圖表分析區塊（清新低飽和粉質配色 + 下拉選單處理） -->
+        <!-- 圖表分析區塊 -->
         <div class="mb-8 p-5 bg-stone-50/90 rounded-2xl border border-stone-200">
             <div class="flex flex-col gap-3 mb-4">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-wrap justify-between items-center gap-2">
                     <h2 class="text-base font-bold text-stone-800 tracking-tight flex items-center gap-2">
                         <i class="ph ph-chart-bar text-xl text-stone-700"></i> 飲食代謝趨勢
                     </h2>
                     
-                    <!-- 功能 1：時間天數改為精簡下拉選單 -->
-                    <div class="flex items-center gap-1.5">
-                        <label for="daysSelect" class="text-xs text-stone-400 font-medium">區間:</label>
-                        <select id="daysSelect" onchange="setDaysFilter(this.value)" class="bg-white border border-stone-200 text-stone-700 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none focus:border-stone-400 shadow-2xs">
-                            <option value="7">近 7 天</option>
-                            <option value="14" selected>近 14 天</option>
-                            <option value="30">近 30 天</option>
-                            <option value="0">全部紀錄</option>
-                        </select>
+                    <div class="flex items-center gap-2">
+                        <!-- 門診專用按鈕 -->
+                        <button onclick="openDoctorModal()" class="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition flex items-center gap-1 shadow-2xs">
+                            <i class="ph ph-first-aid text-sm"></i> 門診快讀卡
+                        </button>
+                        
+                        <!-- 時間天數下拉選單 -->
+                        <div class="flex items-center gap-1 bg-white border border-stone-200 rounded-lg px-2 py-1 shadow-2xs">
+                            <label for="daysSelect" class="text-xs text-stone-400 font-medium">區間:</label>
+                            <select id="daysSelect" onchange="setDaysFilter(this.value)" class="bg-transparent text-stone-700 text-xs font-bold outline-none cursor-pointer">
+                                <option value="7">7天</option>
+                                <option value="14" selected>14天</option>
+                                <option value="30">30天</option>
+                                <option value="0">全部</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -154,10 +161,10 @@
                     
                     <div class="flex items-center gap-1 overflow-x-auto hide-scrollbar text-xs font-medium">
                         <button onclick="setMealFilter('all')" data-meal="all" class="meal-btn px-2.5 py-1 rounded-lg bg-stone-800 text-white font-bold">整日堆疊</button>
-                        <button onclick="setMealFilter('早餐')" data-meal="早餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">早</button>
-                        <button onclick="setMealFilter('午餐')" data-meal="午餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">午</button>
-                        <button onclick="setMealFilter('晚餐')" data-meal="晚餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">晚</button>
-                        <button onclick="setMealFilter('宵夜')" data-meal="宵夜" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">宵夜</button>
+                        <button onclick="setMealFilter('早餐')" data-meal="早餐" class="meal-btn px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">早</button>
+                        <button onclick="setMealFilter('午餐')" data-meal="午餐" class="meal-btn px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">午</button>
+                        <button onclick="setMealFilter('晚餐')" data-meal="晚餐" class="meal-btn px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">晚</button>
+                        <button onclick="setMealFilter('宵夜')" data-meal="宵夜" class="meal-btn px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">宵夜</button>
                     </div>
                 </div>
             </div>
@@ -173,7 +180,7 @@
             </div>
         </div>
 
-        <!-- 時間軸標題列與功能 3：特定日期搜尋器 -->
+        <!-- 時間軸標題列與特定日期搜尋器 -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-stone-100">
             <h2 class="text-base font-bold text-stone-700 tracking-wider flex items-center gap-2">
                 <i class="ph ph-book-open text-xl text-stone-400"></i> 飲食紀錄時間軸
@@ -199,7 +206,7 @@
         <!-- 飲食記錄容器 -->
         <div id="timeline-container" class="space-y-6"></div>
 
-        <!-- 功能 2：Lazy Loading 觸底偵測與提示 -->
+        <!-- Lazy Loading 觸底偵測與提示 -->
         <div id="loading-sentinel" class="py-6 text-center text-xs text-stone-400"></div>
     </div>
 
@@ -207,6 +214,83 @@
     <button onclick="openModal('meal', '點心/其他')" class="fixed bottom-6 right-6 md:hidden w-14 h-14 bg-stone-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-stone-700 transition active:scale-90 z-20">
         <i class="ph ph-plus text-3xl font-bold"></i>
     </button>
+</div>
+
+<!-- 門診專用彈窗（支援 14天 / 30天 動態切換） -->
+<div id="doctor-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-200 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl border border-stone-200 overflow-y-auto max-h-[90vh]" id="doctor-modal-content">
+        <div class="flex justify-between items-start mb-4 pb-3 border-b border-stone-100">
+            <div>
+                <h3 class="text-lg font-bold text-stone-800 flex items-center gap-1.5">
+                    <i class="ph ph-stethoscope text-emerald-700 text-xl"></i> 減重代謝門診摘要
+                </h3>
+                <p class="text-xs text-stone-400 mt-0.5" id="doctor-summary-range">統計區間計算中...</p>
+            </div>
+            <button onclick="closeModal('doctor-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
+                <i class="ph ph-x text-xl"></i>
+            </button>
+        </div>
+
+        <!-- 門診天數切換標籤：14天 與 30天 -->
+        <div class="flex items-center gap-2 mb-4 bg-stone-100/80 p-1 rounded-xl">
+            <span class="text-xs text-stone-500 font-bold ml-2">觀察週期:</span>
+            <button onclick="setDoctorDays(14)" id="doc-btn-14" class="doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-2xs">近 14 天</button>
+            <button onclick="setDoctorDays(30)" id="doc-btn-30" class="doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition text-stone-600 hover:text-stone-900">近 30 天</button>
+        </div>
+        
+        <div class="space-y-4 text-stone-700">
+            <!-- 核心指標看板 -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                    <p class="text-xs text-stone-400">目前體重</p>
+                    <p class="text-base font-bold text-stone-800 mt-0.5" id="doc-weight">-</p>
+                </div>
+                <div class="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                    <p class="text-xs text-stone-400">目前腰圍</p>
+                    <p class="text-base font-bold text-stone-800 mt-0.5" id="doc-waist">-</p>
+                </div>
+                <div class="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                    <p class="text-xs text-stone-400">日均攝取</p>
+                    <p class="text-base font-bold text-stone-800 mt-0.5" id="doc-avg-cal">-</p>
+                </div>
+                <div class="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                    <p class="text-xs text-stone-400">日均蛋白質</p>
+                    <p class="text-base font-bold text-emerald-700 mt-0.5" id="doc-avg-pro">-</p>
+                </div>
+            </div>
+
+            <!-- 各餐佔比 -->
+            <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200/70 text-xs">
+                <p class="font-bold text-stone-700 mb-2 flex items-center gap-1">
+                    <i class="ph ph-pie-chart text-stone-500"></i> 各餐熱量佔比分配
+                </p>
+                <div class="grid grid-cols-4 gap-1 text-center font-medium" id="doc-meal-ratios">
+                    <div class="bg-white p-2 rounded-lg border border-stone-200/60">早餐: -</div>
+                    <div class="bg-white p-2 rounded-lg border border-stone-200/60">午餐: -</div>
+                    <div class="bg-white p-2 rounded-lg border border-stone-200/60">晚餐: -</div>
+                    <div class="bg-white p-2 rounded-lg border border-stone-200/60">宵夜: -</div>
+                </div>
+            </div>
+
+            <!-- 關鍵飲食特徵與破口統計 -->
+            <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200/70 text-xs space-y-2">
+                <p class="font-bold text-stone-700 flex items-center gap-1">
+                    <i class="ph ph-check-circle text-emerald-600"></i> 飲食執行亮點與盲點提示
+                </p>
+                <ul class="space-y-1.5 text-stone-600 leading-relaxed list-disc list-inside" id="doc-insights-list">
+                    <li>分析中...</li>
+                </ul>
+            </div>
+
+            <!-- 門診溝通重點 -->
+            <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/70 text-xs leading-relaxed text-amber-900">
+                <p class="font-bold text-amber-950 mb-1 flex items-center gap-1">
+                    <i class="ph ph-chat-circle-dots text-amber-800"></i> 建議現場回報重點：
+                </p>
+                <p id="doc-talk-guide">「醫師好，這是我近期飲食總結：每日蛋白質平均有維持在近 70 克；打藥後前 1~2 天食慾較低，偶爾晚餐澱粉較多會容易脹氣嗜睡，宵夜已多轉為無糖優格，您看目前的代謝走向與劑量是否需微調？」</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- 體態彈窗 -->
@@ -337,10 +421,13 @@
     let currentMetricMode = 'cal'; 
     let currentMealFilter = 'all'; 
 
+    // 門診彈窗天數狀態 (預設 14 天)
+    let doctorDaysFilter = 14;
+
     // Lazy loading 與搜尋狀態變數
-    let visibleDaysCount = 14; // 預設顯示最近 14 天
-    const DAYS_INCREMENT = 14; // 每次滑動到底部增加 14 天
-    let selectedSearchDate = null; // 特定日期搜尋字串 (YYYY-MM-DD)
+    let visibleDaysCount = 14; 
+    const DAYS_INCREMENT = 14; 
+    let selectedSearchDate = null; 
     let observer = null;
 
     async function syncFromFirebase() {
@@ -402,7 +489,7 @@
     }
 
     // ==========================================
-    // 圖表控制器（方案二：清新低飽和粉質系 + 下拉選單切換）
+    // 圖表控制器
     // ==========================================
     function setDaysFilter(daysValue) {
         currentDaysFilter = parseInt(daysValue);
@@ -429,7 +516,7 @@
             if (btn.dataset.meal === meal) {
                 btn.className = 'meal-btn px-2.5 py-1 rounded-lg bg-stone-800 text-white font-bold';
             } else {
-                btn.className = 'meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600 font-medium';
+                btn.className = 'meal-btn px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-stone-600 font-medium';
             }
         });
         renderChart();
@@ -601,7 +688,126 @@
     }
 
     // ==========================================
-    // 功能 3：日期搜尋過濾邏輯
+    // 門診專用摘要計算與彈窗邏輯（14天 / 30天 切換）
+    // ==========================================
+    function setDoctorDays(days) {
+        doctorDaysFilter = days;
+        [14, 30].forEach(d => {
+            const btn = document.getElementById(`doc-btn-${d}`);
+            if (btn) {
+                if (d === days) {
+                    btn.className = "doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-2xs";
+                } else {
+                    btn.className = "doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition text-stone-600 hover:text-stone-900";
+                }
+            }
+        });
+        updateDoctorModalContent();
+    }
+
+    function openDoctorModal() {
+        const m = document.getElementById('doctor-modal');
+        updateDoctorModalContent();
+        m.classList.remove('hidden');
+        setTimeout(() => { m.classList.remove('opacity-0'); }, 10);
+    }
+
+    function updateDoctorModalContent() {
+        if (state.scaleData.length > 0) {
+            const latest = state.scaleData[0];
+            document.getElementById('doc-weight').textContent = latest.weight ? latest.weight + ' kg' : '未記錄';
+            document.getElementById('doc-waist').textContent = latest.waist ? latest.waist + ' cm' : '未記錄';
+        } else {
+            document.getElementById('doc-weight').textContent = '未記錄';
+            document.getElementById('doc-waist').textContent = '未記錄';
+        }
+
+        const dailyMap = new Map();
+        const sortedAsc = [...state.entries]
+            .filter(e => e.type === 'meal')
+            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        sortedAsc.forEach(e => {
+            const d = new Date(e.timestamp);
+            const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            if (!dailyMap.has(dateKey)) {
+                dailyMap.set(dateKey, { totalCal: 0, totalPro: 0, bCal: 0, lCal: 0, dCal: 0, nCal: 0, entries: [] });
+            }
+            const item = dailyMap.get(dateKey);
+            const cal = parseInt(e.calories) || 0;
+            const pro = parseInt(e.protein) || 0;
+            item.totalCal += cal;
+            item.totalPro += pro;
+            item.entries.push(e);
+
+            if (e.category && e.category.includes('早')) item.bCal += cal;
+            else if (e.category && e.category.includes('午')) item.lCal += cal;
+            else if (e.category && e.category.includes('晚')) item.dCal += cal;
+            else item.nCal += cal;
+        });
+
+        let targetDays = Array.from(dailyMap.entries()).slice(-doctorDaysFilter);
+        
+        if (targetDays.length > 0) {
+            const startD = targetDays[0][0];
+            const endD = targetDays[targetDays.length - 1][0];
+            document.getElementById('doctor-summary-range').textContent = `統計區間：${startD} 至 ${endD}（共 ${targetDays.length} 天紀錄）`;
+
+            let sumCal = 0, sumPro = 0, sumB = 0, sumL = 0, sumD = 0, sumN = 0;
+            let friedCount = 0;
+            let goodProteinDays = 0;
+
+            targetDays.forEach(([_, day]) => {
+                sumCal += day.totalCal;
+                sumPro += day.totalPro;
+                sumB += day.bCal;
+                sumL += day.lCal;
+                sumD += day.dCal;
+                sumN += day.nCal;
+                if (day.totalPro >= 60) goodProteinDays++;
+
+                day.entries.forEach(e => {
+                    const text = (e.title + ' ' + (e.analysis || '')).toLowerCase();
+                    if (text.includes('炸') || text.includes('酥') || text.includes('甜') || text.includes('泡芙') || text.includes('比薩') || text.includes('薯條')) {
+                        friedCount++;
+                    }
+                });
+            });
+
+            const count = targetDays.length;
+            const avgCal = Math.round(sumCal / count);
+            const avgPro = Math.round(sumPro / count);
+
+            document.getElementById('doc-avg-cal').textContent = `${avgCal} kcal`;
+            document.getElementById('doc-avg-pro').textContent = `${avgPro} g`;
+
+            const totalMealCal = (sumB + sumL + sumD + sumN) || 1;
+            const pB = Math.round((sumB / totalMealCal) * 100);
+            const pL = Math.round((sumL / totalMealCal) * 100);
+            const pD = Math.round((sumD / totalMealCal) * 100);
+            const pN = Math.round((sumN / totalMealCal) * 100);
+
+            document.getElementById('doc-meal-ratios').innerHTML = `
+                <div class="bg-white p-2 rounded-lg border border-stone-200/60">早餐: <span class="font-bold text-amber-800">${pB}%</span></div>
+                <div class="bg-white p-2 rounded-lg border border-stone-200/60">午餐: <span class="font-bold text-emerald-800">${pL}%</span></div>
+                <div class="bg-white p-2 rounded-lg border border-stone-200/60">晚餐: <span class="font-bold text-blue-800">${pD}%</span></div>
+                <div class="bg-white p-2 rounded-lg border border-stone-200/60">宵夜: <span class="font-bold text-purple-800">${pN}%</span></div>
+            `;
+
+            document.getElementById('doc-insights-list').innerHTML = `
+                <li><span class="font-bold text-stone-800">蛋白質保肌防線：</span>最近 ${count} 天中，有 <span class="font-bold text-emerald-700">${goodProteinDays} 天</span> 蛋白質攝取達 60g 以上基準。</li>
+                <li><span class="font-bold text-stone-800">油脂與甜食頻率：</span>累計偵測到約 <span class="font-bold text-amber-800">${friedCount} 次</span> 高油炸物或高糖點心攝取。</li>
+                <li><span class="font-bold text-stone-800">用藥與腸胃適應：</span>晚餐若碳水份量較高易引起昏睡嗜睡，宵夜已多轉向高蛋白優格替代。</li>
+            `;
+            
+            document.getElementById('doc-talk-guide').textContent = `「醫師好，這是我近 ${count} 天的總結：每日蛋白質平均維持在約 ${avgPro} 克；打藥後前 1~2 天食慾較低，偶爾晚餐澱粉較多會容易脹氣嗜睡，宵夜已多轉為無糖優格，您看目前的代謝走向與劑量是否需微調？」`;
+        } else {
+            document.getElementById('doctor-summary-range').textContent = '尚無足夠飲食天數資料進行統計';
+        }
+    }
+
+    // ==========================================
+    // 日期搜尋過濾邏輯
     // ==========================================
     function handleDateSearch(dateVal) {
         if (!dateVal) {
@@ -622,12 +828,12 @@
         document.getElementById('search-date-input').value = '';
         document.getElementById('clear-search-btn').classList.add('hidden');
         document.getElementById('search-banner').classList.add('hidden');
-        visibleDaysCount = 14; // 重置回到預設 14 天
+        visibleDaysCount = 14; 
         renderTimeline();
     }
 
     // ==========================================
-    // 功能 2：Lazy Loading（滑動至底部觸發載入）
+    // Lazy Loading
     // ==========================================
     function setupLazyLoading() {
         const sentinel = document.getElementById('loading-sentinel');
@@ -635,7 +841,6 @@
 
         observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && !selectedSearchDate) {
-                // 若未處於搜尋狀態，觸底增量載入更多天數
                 const allDaysCount = getUniqueDaysList().length;
                 if (visibleDaysCount < allDaysCount) {
                     visibleDaysCount += DAYS_INCREMENT;
@@ -654,11 +859,11 @@
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             set.add(key);
         });
-        return Array.from(set).sort().reverse(); // 由新到舊
+        return Array.from(set).sort().reverse();
     }
 
     // ==========================================
-    // 時間軸渲染（整合分頁載入與特定日期搜尋）
+    // 時間軸渲染
     // ==========================================
     function renderTimeline() {
         const container = document.getElementById('timeline-container');
@@ -671,7 +876,6 @@
             return;
         }
 
-        // 若開啟日期搜尋，只過濾該天
         if (selectedSearchDate) {
             sortedEntries = sortedEntries.filter(e => {
                 const d = new Date(e.timestamp);
@@ -685,7 +889,6 @@
                 return;
             }
         } else {
-            // Lazy Loading：限制只呈現前 visibleDaysCount 個獨立天數
             const allDays = getUniqueDaysList();
             const allowedDays = new Set(allDays.slice(0, visibleDaysCount));
             sortedEntries = sortedEntries.filter(e => {
@@ -748,7 +951,6 @@
             endDate.setDate(endDate.getDate() + 6);
             const weekLabel = `${startDate.getMonth()+1}/${startDate.getDate()} - ${endDate.getMonth()+1}/${endDate.getDate()}`;
             
-            // 搜尋單日模式時，隱藏週小結卡片，版面更純粹
             if (!selectedSearchDate) {
                 htmlContent += `
                 <div class="mb-6 p-5 bg-stone-50 rounded-xl border border-stone-200/80 text-stone-700">
@@ -1144,6 +1346,7 @@
     document.getElementById('entry-modal').addEventListener('click', (e) => { if (e.target.id === 'entry-modal') closeModal('entry-modal'); });
     document.getElementById('data-modal').addEventListener('click', (e) => { if (e.target.id === 'data-modal') closeModal('data-modal'); });
     document.getElementById('scale-modal').addEventListener('click', (e) => { if (e.target.id === 'scale-modal') closeModal('scale-modal'); });
+    document.getElementById('doctor-modal').addEventListener('click', (e) => { if (e.target.id === 'doctor-modal') closeModal('doctor-modal'); });
 </script>
 </body>
 </html>
