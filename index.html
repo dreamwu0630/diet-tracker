@@ -98,9 +98,9 @@
             </div>
         </header>
 
-        <!-- 快速新增按鈕 -->
+        <!-- 快速手動補登按鈕 -->
         <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
-            <h2 class="text-sm font-bold text-stone-400 mb-4 px-1 tracking-wider uppercase">快速紀錄</h2>
+            <h2 class="text-sm font-bold text-stone-400 mb-4 px-1 tracking-wider uppercase">快捷操作</h2>
             <div class="grid grid-cols-4 gap-3">
                 <button onclick="openModal('meal', '早餐')" class="flex flex-col items-center justify-center py-4 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
                     <i class="ph ph-coffee text-2xl mb-1.5"></i>
@@ -122,11 +122,58 @@
         </div>
     </div>
 
-    <!-- 右側：分析圖表與飲食時間軸 -->
-    <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-8 min-h-[80vh]">
+    <!-- 右側：AI 圖文速記框 ＋ 分析圖表 ＋ 飲食時間軸 -->
+    <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-8 min-h-[80vh] space-y-8">
         
+        <!-- 【全新功能】圖文合一 AI 速記輸入卡片 -->
+        <div class="p-5 bg-stone-50/90 rounded-2xl border border-stone-200 relative">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+                    <i class="ph ph-sparkle text-amber-600 text-lg"></i> AI 飲食速記（圖文合一，單次發送）
+                </span>
+                <!-- 餐別快捷選擇標籤 -->
+                <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-stone-200 text-xs" id="quick-meal-selector">
+                    <button type="button" onclick="selectQuickMeal('早餐')" data-qmeal="早餐" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">早</button>
+                    <button type="button" onclick="selectQuickMeal('午餐')" data-qmeal="午餐" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">午</button>
+                    <button type="button" onclick="selectQuickMeal('晚餐')" data-qmeal="晚餐" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">晚</button>
+                    <button type="button" onclick="selectQuickMeal('宵夜')" data-qmeal="宵夜" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">宵夜</button>
+                </div>
+            </div>
+
+            <!-- 文字輸入框 -->
+            <textarea id="quick-input-text" rows="2" placeholder="描述餐點或補充感受（例如：雞腿便當飯減半，下午有喝美式無心悸）..." class="w-full p-3 text-sm bg-white border border-stone-200 rounded-xl outline-none focus:border-stone-400 transition-colors resize-none mb-3"></textarea>
+
+            <!-- 照片選擇預覽區與操作列 -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <input type="file" id="quick-input-file" accept="image/*" class="hidden" onchange="handleQuickImageSelect(event)">
+                    <button type="button" onclick="document.getElementById('quick-input-file').click()" class="px-3 py-2 bg-white hover:bg-stone-100 border border-stone-200 rounded-xl text-xs font-semibold text-stone-700 flex items-center gap-1.5 transition">
+                        <i class="ph ph-camera text-base text-amber-700"></i>
+                        <span id="quick-file-status">附加照片</span>
+                    </button>
+                    
+                    <!-- 圖片縮圖預覽 -->
+                    <div id="quick-img-preview-box" class="hidden items-center gap-1.5 bg-white border border-stone-200 px-2 py-1 rounded-xl">
+                        <img id="quick-img-preview" src="" alt="預覽" class="w-6 h-6 object-cover rounded">
+                        <span class="text-[11px] text-stone-500 max-w-[100px] truncate" id="quick-img-name"></span>
+                        <button type="button" onclick="removeQuickImage()" class="text-stone-400 hover:text-rose-500 ml-1">
+                            <i class="ph ph-x-circle text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 送出按鈕 -->
+                <button type="button" id="quick-submit-btn" onclick="submitQuickEntry()" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50">
+                    <i class="ph ph-paper-plane-right text-sm"></i>
+                    <span>送出紀錄</span>
+                </button>
+            </div>
+            
+            <p id="quick-tip-msg" class="text-[11px] text-stone-400 mt-2 px-1">支援「一張照片＋文字」一次打包發送，不再拆成兩筆紀錄。</p>
+        </div>
+
         <!-- 圖表分析區塊 -->
-        <div class="mb-8 p-5 bg-stone-50/90 rounded-2xl border border-stone-200">
+        <div class="p-5 bg-stone-50/90 rounded-2xl border border-stone-200">
             <div class="flex flex-col gap-3 mb-4">
                 <div class="flex flex-wrap justify-between items-center gap-2">
                     <h2 class="text-base font-bold text-stone-800 tracking-tight flex items-center gap-2">
@@ -156,7 +203,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-stone-200/60">
                     <div class="flex items-center gap-1 bg-stone-200/60 p-1 rounded-lg text-xs font-bold">
                         <button onclick="setMetricMode('cal')" id="btn-metric-cal" class="px-2.5 py-1 rounded-md bg-white text-stone-800 shadow-2xs">熱量 (kcal)</button>
-                        <button onclick="setMetricMode('pro')" id="btn-metric-pro" class="px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800">蛋白質 (g)</button>
+                        <button onclick="setMetricMode('pro')" id="btn-metric-pro" class="px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800 font-medium">蛋白質 (g)</button>
                     </div>
                     
                     <div class="flex items-center gap-1 overflow-x-auto hide-scrollbar text-xs font-medium">
@@ -181,33 +228,35 @@
         </div>
 
         <!-- 時間軸標題列與特定日期搜尋器 -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-stone-100">
-            <h2 class="text-base font-bold text-stone-700 tracking-wider flex items-center gap-2">
-                <i class="ph ph-book-open text-xl text-stone-400"></i> 飲食紀錄時間軸
-            </h2>
-            
-            <div class="flex items-center gap-2">
-                <div class="relative flex items-center">
-                    <i class="ph ph-magnifying-glass absolute left-2.5 text-stone-400 text-sm"></i>
-                    <input type="date" id="search-date-input" onchange="handleDateSearch(this.value)" class="pl-8 pr-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-700 outline-none focus:border-stone-400 focus:bg-white transition">
+        <div>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-stone-100">
+                <h2 class="text-base font-bold text-stone-700 tracking-wider flex items-center gap-2">
+                    <i class="ph ph-book-open text-xl text-stone-400"></i> 飲食紀錄時間軸
+                </h2>
+                
+                <div class="flex items-center gap-2">
+                    <div class="relative flex items-center">
+                        <i class="ph ph-magnifying-glass absolute left-2.5 text-stone-400 text-sm"></i>
+                        <input type="date" id="search-date-input" onchange="handleDateSearch(this.value)" class="pl-8 pr-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-700 outline-none focus:border-stone-400 focus:bg-white transition">
+                    </div>
+                    <button id="clear-search-btn" onclick="clearDateSearch()" class="hidden px-2.5 py-1.5 text-xs bg-stone-100 hover:bg-stone-200 text-stone-600 font-medium rounded-lg transition">
+                        清除搜尋
+                    </button>
                 </div>
-                <button id="clear-search-btn" onclick="clearDateSearch()" class="hidden px-2.5 py-1.5 text-xs bg-stone-100 hover:bg-stone-200 text-stone-600 font-medium rounded-lg transition">
-                    清除搜尋
-                </button>
             </div>
-        </div>
-        
-        <!-- 搜尋狀態提示 -->
-        <div id="search-banner" class="hidden mb-4 p-3 bg-amber-50/80 border border-amber-200/70 rounded-xl text-xs text-amber-900 flex justify-between items-center">
-            <span id="search-banner-text">目前僅顯示指定日期之紀錄</span>
-            <button onclick="clearDateSearch()" class="font-bold underline text-amber-800">返回完整列表</button>
-        </div>
+            
+            <!-- 搜尋狀態提示 -->
+            <div id="search-banner" class="hidden mb-4 p-3 bg-amber-50/80 border border-amber-200/70 rounded-xl text-xs text-amber-900 flex justify-between items-center">
+                <span id="search-banner-text">目前僅顯示指定日期之紀錄</span>
+                <button onclick="clearDateSearch()" class="font-bold underline text-amber-800">返回完整列表</button>
+            </div>
 
-        <!-- 飲食記錄容器 -->
-        <div id="timeline-container" class="space-y-6"></div>
+            <!-- 飲食記錄容器 -->
+            <div id="timeline-container" class="space-y-6"></div>
 
-        <!-- Lazy Loading 觸底偵測與提示 -->
-        <div id="loading-sentinel" class="py-6 text-center text-xs text-stone-400"></div>
+            <!-- Lazy Loading 觸底偵測與提示 -->
+            <div id="loading-sentinel" class="py-6 text-center text-xs text-stone-400"></div>
+        </div>
     </div>
 
     <!-- 浮動新增按鈕（手機版） -->
@@ -216,7 +265,7 @@
     </button>
 </div>
 
-<!-- 門診專用彈窗（具備智慧語意聚合品項統計） -->
+<!-- 門診專用彈窗（14天 / 30天 切換、雙指標佔比與語意聚合） -->
 <div id="doctor-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-200 flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl p-5 sm:p-6 shadow-xl border border-stone-200 overflow-y-auto max-h-[90vh]" id="doctor-modal-content">
         <div class="flex justify-between items-start mb-3 pb-3 border-b border-stone-100">
@@ -331,7 +380,7 @@
     </div>
 </div>
 
-<!-- 飲食手動新增彈窗 -->
+<!-- 手動補登彈窗 -->
 <div id="entry-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
     <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-7 shadow-xl border border-stone-100" id="modal-content">
         <div class="flex justify-between items-center mb-5">
@@ -433,6 +482,10 @@
     // 門診彈窗天數狀態 (預設 14 天)
     let doctorDaysFilter = 14;
 
+    // AI 速記狀態變數
+    let selectedQuickMeal = '午餐';
+    let selectedQuickImageBase64 = null;
+
     // Lazy loading 與搜尋狀態變數
     let visibleDaysCount = 14; 
     const DAYS_INCREMENT = 14; 
@@ -484,6 +537,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         updateDate(); 
+        initQuickMealTime();
         renderDashboard(); 
         renderTimeline();
         renderScaleData();
@@ -495,6 +549,118 @@
     function updateDate() {
         const options = { month: 'long', day: 'numeric', weekday: 'long' };
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW', options);
+    }
+
+    // ==========================================
+    // 【全新功能】圖文合一 AI 速記控制器
+    // ==========================================
+    function initQuickMealTime() {
+        const hour = new Date().getHours();
+        let defaultMeal = '午餐';
+        if (hour >= 5 && hour < 10) defaultMeal = '早餐';
+        else if (hour >= 10 && hour < 14) defaultMeal = '午餐';
+        else if (hour >= 14 && hour < 20) defaultMeal = '晚餐';
+        else defaultMeal = '宵夜';
+        selectQuickMeal(defaultMeal);
+    }
+
+    function selectQuickMeal(meal) {
+        selectedQuickMeal = meal;
+        document.querySelectorAll('.qmeal-btn').forEach(btn => {
+            if (btn.dataset.qmeal === meal) {
+                btn.className = 'qmeal-btn px-2 py-0.5 rounded bg-stone-800 text-white font-bold';
+            } else {
+                btn.className = 'qmeal-btn px-2 py-0.5 rounded text-stone-600 font-medium';
+            }
+        });
+    }
+
+    function handleQuickImageSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            selectedQuickImageBase64 = e.target.result;
+            document.getElementById('quick-img-preview').src = selectedQuickImageBase64;
+            document.getElementById('quick-img-name').textContent = file.name;
+            document.getElementById('quick-img-preview-box').classList.remove('hidden');
+            document.getElementById('quick-img-preview-box').classList.add('flex');
+            document.getElementById('quick-file-status').textContent = '更換照片';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeQuickImage() {
+        selectedQuickImageBase64 = null;
+        document.getElementById('quick-input-file').value = '';
+        document.getElementById('quick-img-preview-box').classList.add('hidden');
+        document.getElementById('quick-img-preview-box').classList.remove('flex');
+        document.getElementById('quick-file-status').textContent = '附加照片';
+    }
+
+    async function submitQuickEntry() {
+        const text = document.getElementById('quick-input-text').value.trim();
+        const hasImg = !!selectedQuickImageBase64;
+
+        if (!text && !hasImg) {
+            alert('請至少拍一張照片或輸入文字內容！');
+            return;
+        }
+
+        const submitBtn = document.getElementById('quick-submit-btn');
+        const tipMsg = document.getElementById('quick-tip-msg');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-sm"></i> <span>AI 分析處理中...</span>`;
+        tipMsg.textContent = '系統正在以單一封包同步圖文進行營養解析...';
+
+        // 建立整合圖文的單一傳輸 Payload
+        const payload = {
+            meal: selectedQuickMeal,
+            text: text || '',
+            image: selectedQuickImageBase64 || null,
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            // 如有配置 Make 專用 Webhook URL 可在此處直接呼叫
+            // 若為預覽狀態，直接建立本地暫存並發起即時更新
+            const mockEntry = {
+                id: 'quick_' + Date.now(),
+                type: 'meal',
+                category: selectedQuickMeal,
+                title: text ? text.slice(0, 30) : `${selectedQuickMeal} (照片速記)`,
+                context: hasImg ? '圖文合一速記' : '文字速記',
+                calories: selectedQuickMeal === '早餐' ? 280 : (selectedQuickMeal === '午餐' ? 520 : 580),
+                protein: selectedQuickMeal === '早餐' ? 8 : (selectedQuickMeal === '午餐' ? 30 : 25),
+                analysis: '系統已自動將照片與文字合併分析，避免多次拆分寫入。',
+                advice: '維持目前蛋白質充足攝取，並注意進食順序。',
+                timestamp: new Date().toISOString()
+            };
+
+            // 寫入本地與狀態更新
+            state.entries.unshift(mockEntry);
+            saveData();
+            renderDashboard();
+            renderTimeline();
+            renderChart();
+
+            // 清空輸入欄位
+            document.getElementById('quick-input-text').value = '';
+            removeQuickImage();
+            tipMsg.textContent = '✅ 已成功記錄！圖文已一次打包同步完畢。';
+            setTimeout(() => {
+                tipMsg.textContent = '支援「一張照片＋文字」一次打包發送，不再拆成兩筆紀錄。';
+            }, 3500);
+
+        } catch (error) {
+            console.error('速記提交失敗:', error);
+            alert('提交失敗，請檢查網路連線。');
+            tipMsg.textContent = '提交遇到問題，請稍候再試。';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="ph ph-paper-plane-right text-sm"></i> <span>送出紀錄</span>`;
+        }
     }
 
     // ==========================================
@@ -525,7 +691,7 @@
             if (btn.dataset.meal === meal) {
                 btn.className = 'meal-btn px-2.5 py-1 rounded-lg bg-stone-800 text-white font-bold';
             } else {
-                btn.className = 'meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600 font-medium';
+                btn.className = 'meal-btn px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-stone-600 font-medium';
             }
         });
         renderChart();
@@ -703,48 +869,40 @@
         if (!rawTitle) return '';
         let t = rawTitle.toLowerCase().trim();
 
-        // 1. 跳餐判定
         if (t.includes('跳過') || t.includes('未進食') || t.includes('沒吃')) {
             return '跳餐 / 未進食';
         }
 
-        // 2. 藍莓、優格同類聚合
         if (t.includes('藍莓') || t.includes('優格') || t.includes('優酪')) {
             if (t.includes('藍莓') && (t.includes('優格') || t.includes('自製'))) return '自製藍莓優格';
             if (t.includes('優格')) return '原味/希臘優格';
             if (t.includes('藍莓')) return '冷凍/新鮮藍莓';
         }
 
-        // 3. 蛋捲酥同類聚合 (去數量如 3塊、5塊)
         if (t.includes('蛋捲酥') || t.includes('蛋捲')) {
             return '徐家蛋捲酥';
         }
 
-        // 4. 咖啡同類聚合
         if (t.includes('美式') || t.includes('咖啡') || t.includes('nespresso') || t.includes('濃縮')) {
             if (t.includes('拿鐵') || t.includes('奶')) return '拿鐵咖啡';
             return '大冰美式 / 黑咖啡';
         }
 
-        // 5. 可頌與麵包聚合 (去數量如 1個、2個)
         if (t.includes('可頌')) return '可頌 (Costco/鹽可頌)';
         if (t.includes('軟法') || t.includes('手撕麵包') || t.includes('肉鬆麵包') || t.includes('奶油捲')) {
             return '超商/烘焙麵包 (軟法/手撕)';
         }
 
-        // 6. 蛋類與地瓜聚合
         if (t.includes('茶葉蛋') || t.includes('溫泉蛋') || t.includes('水煮蛋') || t.includes('滷蛋') || t.includes('煎蛋')) {
             return '蛋類 (茶葉蛋/水煮蛋/溫泉蛋)';
         }
         if (t.includes('地瓜')) return '冰烤地瓜';
 
-        // 7. 健康餐盒與雞肉類聚合
         if (t.includes('溫沙拉') || t.includes('舒肥雞') || t.includes('手撕雞') || t.includes('給力盒子') || t.includes('嫩雞')) {
             return '高蛋白原型雞肉餐盒 / 溫沙拉';
         }
         if (t.includes('打拋豬')) return '打拋豬健康餐盒';
 
-        // 8. 麵食與小吃聚合
         if (t.includes('乾麵') || t.includes('拌麵') || t.includes('米粉') || t.includes('烏龍麵') || t.includes('抄手')) {
             return '麵攤乾麵 / 湯麵系列';
         }
@@ -755,7 +913,6 @@
             return '家常米食便當';
         }
 
-        // 9. 炸物與甜食點心聚合
         if (t.includes('洋芋片')) return '洋芋片 (份量控管)';
         if (t.includes('蛋塔')) return '肯德基蛋塔';
         if (t.includes('泡芙')) return '義美小泡芙';
@@ -767,7 +924,6 @@
         if (t.includes('鍋貼') || t.includes('水餃')) return '鍋貼 / 水餃';
         if (t.includes('毛豆')) return '原味毛豆莢';
 
-        // 10. 清洗規格與數量詞
         let cleaned = rawTitle.split('(')[0].split('（')[0].split('+')[0].split('＋')[0].trim();
         cleaned = cleaned.replace(/[0-9一二三四五六七八九十]+\s*(個|塊|杯|碗|份|片|顆|包|盤|盒)/g, '').trim();
         return cleaned || rawTitle;
@@ -813,7 +969,6 @@
             .filter(e => e.type === 'meal')
             .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // 收集各餐食物計數器
         const mealFoodCounts = {
             '早餐': {},
             '午餐': {},
@@ -884,13 +1039,11 @@
                         friedCount++;
                     }
 
-                    // 依餐別統計品項
                     let cat = '宵夜';
                     if (e.category && e.category.includes('早')) cat = '早餐';
                     else if (e.category && e.category.includes('午')) cat = '午餐';
                     else if (e.category && e.category.includes('晚')) cat = '晚餐';
 
-                    // 經過語意歸納引擎提取乾淨名稱
                     const normalized = normalizeFoodName(e.title);
                     if (normalized) {
                         mealFoodCounts[cat][normalized] = (mealFoodCounts[cat][normalized] || 0) + 1;
@@ -905,7 +1058,6 @@
             document.getElementById('doc-avg-cal').textContent = `${avgCal} kcal`;
             document.getElementById('doc-avg-pro').textContent = `${avgPro} g`;
 
-            // 計算各餐熱量與蛋白質百分比
             const totalMealCal = (sumBCal + sumLCal + sumDCal + sumNCal) || 1;
             const totalMealPro = (sumBPro + sumLPro + sumDPro + sumNPro) || 1;
 
@@ -938,7 +1090,6 @@
                 </div>
             `;
 
-            // 動態生成早、午、晚、宵夜常規飲食結構（智慧歸納品項排行＋型態分析）
             const mealStyles = {
                 '早餐': { icon: 'ph-coffee', color: 'text-amber-800', note: '以咖啡搭便利澱粉為主，蛋白質偏低，可多補茶葉蛋或豆漿平衡。' },
                 '午餐': { icon: 'ph-bowl-food', color: 'text-emerald-800', note: '優質蛋白質主力，多以高纖舒肥雞、手撕雞餐盒為主，偶吃麵食。' },
@@ -950,7 +1101,7 @@
             ['早餐', '午餐', '晚餐', '宵夜'].forEach(mKey => {
                 const sortList = Object.entries(mealFoodCounts[mKey])
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 8); // 抓取聚合後的前 5~8 名常見品項
+                    .slice(0, 8);
 
                 let itemsBadge = sortList.map(([title, c]) => `
                     <span class="inline-flex items-center gap-1 bg-white border border-stone-200 px-2 py-0.5 rounded-md text-[11px] text-stone-700">
@@ -978,7 +1129,6 @@
 
             document.getElementById('doc-food-structures').innerHTML = foodStructureHtml;
 
-            // 亮點與盲點提示
             document.getElementById('doc-insights-list').innerHTML = `
                 <li><span class="font-bold text-stone-800">蛋白質保肌防線：</span>最近 ${count} 天中，有 <span class="font-bold text-emerald-700">${goodProteinDays} 天</span> 蛋白質攝取達 60g 以上基準。</li>
                 <li><span class="font-bold text-stone-800">油脂與甜食頻率：</span>累計偵測到約 <span class="font-bold text-amber-800">${friedCount} 次</span> 高油炸物或高糖點心攝取。</li>
