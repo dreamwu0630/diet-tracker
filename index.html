@@ -634,10 +634,7 @@
                 });
             });
 
-            // 雲端餐點依「同一天＋同餐別」自動去重
             const dedupedMeals = dedupeMealsByDayAndCategory(cloudMeals);
-
-            // 只保留本機真正的喝水紀錄（排除過去水字誤判產生的異常項目）
             const localWaters = state.entries.filter(e => e.type === 'water' && e.amount > 0);
 
             state.entries = [...dedupedMeals, ...localWaters].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -649,7 +646,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // 啟動時先整理本機快取，確保首次畫面就沒有重複餐
         const localMeals = dedupeMealsByDayAndCategory(state.entries.filter(e => e.type === 'meal'));
         const localWaters = state.entries.filter(e => e.type === 'water' && e.amount > 0);
         state.entries = [...localMeals, ...localWaters].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -893,12 +889,11 @@
     }
 
     // ==========================================
-    // 去括號＋固定大類歸納引擎（已補齊煎餃、酥炸與蛋餅順位）
+    // 去括號＋固定大類歸納引擎
     // ==========================================
     function classifyMealToMajorCategories(rawTitle) {
         if (!rawTitle) return ['其他餐點'];
 
-        // 1. 移除括號內配菜與份量補充
         const withoutParens = rawTitle
             .replace(/\([^)]*\)/g, '')
             .replace(/（[^）]*）/g, '')
@@ -910,12 +905,10 @@
             return ['跳餐 / 未進食'];
         }
 
-        // 2. 依 ＋ / + / 、 拆出主項，過濾藥物與純配角
         const parts = withoutParens.split(/[＋+、]/).map(s => s.trim()).filter(Boolean);
 
         const sideOnlyPattern = /^(白飯|紫米飯|五穀飯|糙米飯|麥飯|美式|黑咖啡|冰美式|熱美式|拿鐵|咖啡|無糖紅茶|無糖綠茶|無糖茶|紅茶|綠茶|烏龍茶|麥茶|可樂|汽水|飲料|味噌湯|雞湯|燉雞白湯|貢丸湯|蛋花湯|青菜湯|湯品|燙青菜|高麗菜|高麗菜絲|青菜|荷包蛋|水煮蛋|溏心蛋|滷蛋|猛健樂|施打|喝水|白開水)/i;
 
-        // 固定 10 大飲食分類（蛋餅優先於炸物，並補齊煎餃、酥炸）
         const mainRules = [
             { pattern: /健康餐盒|給力盒子|初喚|溫沙拉|沙拉碗|沙拉盆|沙拉|舒肥雞|手撕雞|汆燙瘦豬肉/, label: '健康餐盒 / 溫沙拉' },
             { pattern: /燒肉|牛五花|松阪豬|牛舌|牛排|陶板燒|鮭魚|蝦仁|海鮮|合菜|滷味|火鍋|壽喜燒|烤肉|鹹水雞/, label: '原型肉菜 / 燒肉海鮮' },
@@ -1353,7 +1346,6 @@
                         <div class="flex justify-between items-start gap-2">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-sm font-semibold px-3 py-0.5 rounded-full ${catStyle}">${entry.category}</span>
-                                <span class="text-sm text-muted">${timeStr}</span>
                                 ${entry.context ? `<span class="text-xs text-muted bg-surface px-2.5 py-0.5 rounded-full">${entry.context}</span>` : ''}
                             </div>
                             <button onclick="deleteEntry('${entry.id}')" class="text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg p-1.5 -mr-1 transition shrink-0" title="刪除紀錄">
