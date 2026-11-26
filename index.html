@@ -280,14 +280,14 @@
                 </div>
             </section>
 
-            <!-- 區塊 B：各餐飲食種類統計（手動滑動卡片＋下方箭頭提醒） -->
+            <!-- 區塊 B：各餐飲食結構統計（固定大類＋佔比條＋手動滑動卡片） -->
             <section class="bg-surface rounded-3xl shadow-soft p-5 md:p-7">
                 <div class="flex items-start justify-between gap-2 mb-4">
                     <div>
                         <h3 class="text-lg font-bold text-ink flex items-center gap-2">
-                            <i class="ph ph-fork-knife text-xl text-oat-dark"></i> 各餐飲食種類統計
+                            <i class="ph ph-fork-knife text-xl text-oat-dark"></i> 各餐飲食結構統計
                         </h3>
-                        <p class="text-sm text-muted mt-0.5">同類品項自動歸納，方便比較近期習慣變化</p>
+                        <p class="text-sm text-muted mt-0.5">只統計主餐大類並濾除配菜飲品，一眼看懂飲食重心</p>
                     </div>
                     <span id="meal-stats-range-badge" class="text-xs font-semibold text-sage bg-sage-soft px-3 py-1.5 rounded-full shrink-0">近 14 天</span>
                 </div>
@@ -852,69 +852,74 @@
     }
 
     // ==========================================
-    // 同類品項歸納 + 各餐飲食統計（手動滑動卡片）
+    // 去括號＋固定大類歸納引擎（過濾配菜與附餐飲品）
     // ==========================================
-    function extractFoodGroups(rawTitle) {
-        if (!rawTitle) return [];
-        const text = rawTitle.trim();
+    function classifyMealToMajorCategories(rawTitle) {
+        if (!rawTitle) return ['其他餐點'];
 
-        if (/跳過|未進食|跳餐|沒吃|斷食/.test(text)) {
+        // 1. 先移除括號內的配菜、份量說明，避免細項干擾
+        const withoutParens = rawTitle
+            .replace(/\([^)]*\)/g, '')
+            .replace(/（[^）]*）/g, '')
+            .trim();
+
+        if (!withoutParens) return ['其他餐點'];
+
+        // 跳餐判斷
+        if (/跳過|未進食|跳餐|沒吃|斷食/.test(withoutParens)) {
             return ['跳餐 / 未進食'];
         }
 
-        const parts = text.split(/[＋+、]/).map(s => s.trim()).filter(Boolean);
-        const groups = new Set();
+        // 2. 依 ＋ / + / 、 拆出主項，過濾藥物與純配角
+        const parts = withoutParens.split(/[＋+、]/).map(s => s.trim()).filter(Boolean);
 
-        const rules = [
-            { pattern: /優格|藍莓/, label: '藍莓 / 無糖優格' },
-            { pattern: /美式|黑咖啡|Nespresso|咖啡(?!麵包)/i, label: '美式 / 咖啡' },
-            { pattern: /洋芋片|卡辣姆久|樂事|多力多滋|雪餅|小泡芙/, label: '洋芋片 / 零嘴' },
+        // 純配角（與主餐並存時不獨立計算）
+        const sideOnlyPattern = /^(白飯|紫米飯|五穀飯|糙米飯|麥飯|美式|黑咖啡|冰美式|熱美式|拿鐵|咖啡|無糖紅茶|無糖綠茶|無糖茶|紅茶|綠茶|烏龍茶|麥茶|可樂|汽水|飲料|味噌湯|雞湯|燉雞白湯|貢丸湯|蛋花湯|青菜湯|湯品|燙青菜|高麗菜|高麗菜絲|青菜|荷包蛋|水煮蛋|溏心蛋|滷蛋|猛健樂|施打|喝水|白開水)/i;
+
+        // 固定 10 大飲食分類
+        const mainRules = [
             { pattern: /健康餐盒|給力盒子|初喚|溫沙拉|沙拉碗|沙拉盆|沙拉|舒肥雞|手撕雞|汆燙瘦豬肉/, label: '健康餐盒 / 溫沙拉' },
-            { pattern: /咔啦|卡啦|漢堡|牛肉堡|鷄塊|雞塊|麥當勞|肯德基(?!.*蛋塔)/, label: '速食漢堡 / 雞塊' },
-            { pattern: /蛋塔/, label: '蛋塔' },
-            { pattern: /宜蘭餅|牛舌餅/, label: '宜蘭餅 / 薄餅' },
-            { pattern: /可頌|鹽奶油卷|奶油卷/, label: '可頌 / 奶油捲' },
-            { pattern: /蛋捲酥|鳳梨酥|千層酥/, label: '蛋捲酥 / 糕餅' },
-            { pattern: /起酥|肉鬆麵包|肉絲麵包|菠蘿|吐司(?!.*肉蛋)|維也納|蛋糕捲|乳酪塔|麵包/, label: '烘焙麵包 / 甜點' },
-            { pattern: /蛋餅|肉蛋吐司|三明治|燒餅/, label: '蛋餅 / 三明治' },
-            { pattern: /豆漿|豆乳/, label: '豆漿 / 豆乳' },
-            { pattern: /鍋貼|水餃/, label: '鍋貼 / 水餃' },
-            { pattern: /披薩|比薩|筆管麵|義大利麵/, label: '披薩 / 義麵' },
-            { pattern: /鐵板麵|烏龍麵|拉麵|炸醬麵|麵線|鍋燒麵|泡麵|魚酥麵|土魠魚麵|乾麵|拌麵/, label: '麵食 / 湯麵' },
-            { pattern: /咖哩飯|炒飯|丼|雞肉飯|便當|排骨飯|粥/, label: '飯類 / 便當' },
-            { pattern: /燒肉|牛五花|松阪豬/, label: '燒肉 / 烤肉' },
-            { pattern: /滷味|燙青菜|空心菜|花椰菜/, label: '滷味 / 青菜' },
-            { pattern: /鹹酥雞|香香雞|炸雞腿|炸排骨|香腸|肉丸/, label: '炸物 / 肉類小吃' },
-            { pattern: /鮭魚|蝦仁|海鮮/, label: '海鮮 / 鮭魚' },
-            { pattern: /地瓜/, label: '蒸 / 烤地瓜' },
-            { pattern: /蘋果|芭樂|西瓜|水果/, label: '水果' },
-            { pattern: /茶葉蛋|水煮蛋|荷包蛋|溫泉蛋/, label: '雞蛋' }
+            { pattern: /燒肉|牛五花|松阪豬|牛舌|牛排|陶板燒|鮭魚|蝦仁|海鮮|合菜|滷味|火鍋|壽喜燒|烤肉|鹹水雞/, label: '原型肉菜 / 燒肉海鮮' },
+            { pattern: /便當|咖哩飯|炒飯|丼|雞肉飯|排骨飯|魯肉飯|滷肉飯|控肉飯|壽司|飯糰|粥|定食/, label: '飯類 / 便當' },
+            { pattern: /鐵板麵|烏龍麵|拉麵|炸醬麵|麵線|鍋燒麵|泡麵|魚酥麵|土魠魚麵|乾麵|拌麵|筆管麵|義大利麵|鍋貼|水餃|餛飩|麵/, label: '麵食 / 鍋貼水餃' },
+            { pattern: /咔啦|卡啦|漢堡|牛肉堡|鷄塊|雞塊|麥當勞|肯德基|鹹酥雞|香香雞|炸雞|炸排骨|炸豬排|炸牛排|炸薯餅|薯餅|薯條|披薩|比薩|香腸|炸物/, label: '速食漢堡 / 炸物' },
+            { pattern: /蛋餅|肉蛋吐司|三明治|燒餅|漢堡吐司|飯糰/, label: '蛋餅 / 三明治' },
+            { pattern: /可頌|奶油卷|鹽奶油卷|起酥|肉鬆麵包|肉絲麵包|菠蘿|維也納|丹麥|奶酥|吐司|麵包|蛋捲酥|鳳梨酥|千層酥|蛋塔|蛋糕|乳酪塔|貝果|司康/, label: '烘焙麵包 / 糕餅' },
+            { pattern: /洋芋片|卡辣姆久|樂事|多力多滋|宜蘭餅|牛舌餅|雪餅|小泡芙|餅乾|洋芋|零嘴|零食|爆米花|堅果/, label: '洋芋片 / 餅乾零嘴' },
+            { pattern: /優格|藍莓|豆漿|豆乳|蘋果|芭樂|西瓜|水果|地瓜|茶葉蛋|蒸蛋/, label: '優格 / 豆漿 / 輕點心' }
         ];
+
+        const matchedMain = new Set();
+        let hasDrinkOnly = false;
 
         parts.forEach(part => {
             if (/猛健樂|施打|喝水|白開水/.test(part)) return;
 
-            let matched = false;
-            for (const rule of rules) {
-                if (rule.pattern.test(part)) {
-                    groups.add(rule.label);
-                    matched = true;
-                    break;
-                }
+            if (sideOnlyPattern.test(part)) {
+                if (/美式|咖啡|拿鐵|茶|飲料|豆漿/.test(part)) hasDrinkOnly = true;
+                return;
             }
 
-            if (!matched) {
-                let cleaned = part
-                    .replace(/\(.*?\)|（.*?）/g, '')
-                    .replace(/\d+(\.\d+)?\s*(份|碗|個|顆|塊|片|杯|瓶|罐|包|盒|根|條|隻|大塊|小包|ml|g)/gi, '')
-                    .replace(/7-11|全家|全聯|早餐店|外送|麵攤|傳統麵包店/g, '')
-                    .trim();
-                if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
-                if (cleaned.length >= 2) groups.add(cleaned);
+            for (const rule of mainRules) {
+                if (rule.pattern.test(part)) {
+                    matchedMain.add(rule.label);
+                    return;
+                }
             }
         });
 
-        return Array.from(groups);
+        if (matchedMain.size > 0) {
+            return Array.from(matchedMain);
+        }
+
+        // 若整餐完全沒有命中的固體主餐，才退回檢查是否為單純輕點心或飲品
+        if (/優格|藍莓|豆漿|豆乳|蛋|水果|地瓜/.test(withoutParens)) {
+            return ['優格 / 豆漿 / 輕點心'];
+        }
+        if (hasDrinkOnly || /美式|咖啡|茶|拿鐵/.test(withoutParens)) {
+            return ['純飲品 / 咖啡'];
+        }
+        return ['其他餐點'];
     }
 
     function renderMealStats() {
@@ -926,10 +931,10 @@
         const { filteredEntries } = getFilteredMealData();
 
         const mealConfigs = [
-            { key: '早餐', icon: 'ph-coffee', accent: 'text-[#8B6A44]', bg: 'bg-oat' },
-            { key: '午餐', icon: 'ph-bowl-food', accent: 'text-sage', bg: 'bg-sage-soft' },
-            { key: '晚餐', icon: 'ph-cooking-pot', accent: 'text-stone-600', bg: 'bg-stone-200/70' },
-            { key: '宵夜', icon: 'ph-moon-stars', accent: 'text-[#7A6A7E]', bg: 'bg-[#F2EEF3]' }
+            { key: '早餐', icon: 'ph-coffee', accent: 'text-[#8B6A44]', bg: 'bg-oat', bar: 'bg-[#D7B385]' },
+            { key: '午餐', icon: 'ph-bowl-food', accent: 'text-sage', bg: 'bg-sage-soft', bar: 'bg-sage' },
+            { key: '晚餐', icon: 'ph-cooking-pot', accent: 'text-stone-600', bg: 'bg-stone-200/70', bar: 'bg-[#9E9389]' },
+            { key: '宵夜', icon: 'ph-moon-stars', accent: 'text-[#7A6A7E]', bg: 'bg-[#F2EEF3]', bar: 'bg-[#B19CB5]' }
         ];
 
         let html = '';
@@ -940,7 +945,7 @@
 
             if (count === 0) {
                 html += `
-                <article class="meal-slide snap-center shrink-0 w-[88%] sm:w-[76%] md:w-[48%] p-5 bg-paper rounded-2xl flex flex-col justify-between min-h-[190px]">
+                <article class="meal-slide snap-center shrink-0 w-[88%] sm:w-[76%] md:w-[48%] p-5 bg-paper rounded-2xl flex flex-col justify-between min-h-[230px]">
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-base font-bold ${cfg.accent} flex items-center gap-2">
@@ -964,19 +969,19 @@
 
             const freqMap = new Map();
             list.forEach(e => {
-                extractFoodGroups(e.title).forEach(g => {
-                    freqMap.set(g, (freqMap.get(g) || 0) + 1);
+                classifyMealToMajorCategories(e.title).forEach(cat => {
+                    freqMap.set(cat, (freqMap.get(cat) || 0) + 1);
                 });
             });
 
             const topItems = Array.from(freqMap.entries())
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 6);
+                .slice(0, 5);
 
             html += `
-            <article class="meal-slide snap-center shrink-0 w-[88%] sm:w-[76%] md:w-[48%] p-5 bg-paper rounded-2xl flex flex-col justify-between min-h-[190px]">
+            <article class="meal-slide snap-center shrink-0 w-[88%] sm:w-[76%] md:w-[48%] p-5 bg-paper rounded-2xl flex flex-col justify-between min-h-[230px]">
                 <div>
-                    <div class="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-stone-200/60">
+                    <div class="flex items-center justify-between gap-2 pb-3 mb-3.5 border-b border-stone-200/60">
                         <span class="text-base font-bold ${cfg.accent} flex items-center gap-2">
                             <span class="w-8 h-8 rounded-full ${cfg.bg} flex items-center justify-center">
                                 <i class="ph ${cfg.icon} text-lg"></i>
@@ -991,14 +996,22 @@
                         </div>
                     </div>
 
-                    <p class="text-xs text-muted mb-2.5">最常吃品項排行</p>
-                    <div class="flex flex-wrap gap-2">
-                        ${topItems.map(([name, num], idx) => `
-                            <span class="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full ${idx === 0 ? `${cfg.bg} ${cfg.accent} font-semibold` : 'bg-surface text-ink/85'}">
-                                ${name}
-                                <span class="text-xs opacity-75">×${num}</span>
-                            </span>
-                        `).join('')}
+                    <div class="space-y-3">
+                        ${topItems.map(([name, num], idx) => {
+                            const pct = Math.min(Math.round((num / count) * 100), 100);
+                            return `
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="${idx === 0 ? 'font-bold text-ink' : 'font-medium text-ink/80'} truncate pr-2">${name}</span>
+                                    <span class="text-xs text-muted shrink-0">
+                                        <strong class="${idx === 0 ? cfg.accent : 'text-ink/80'}">${num} 次</strong> (${pct}%)
+                                    </span>
+                                </div>
+                                <div class="w-full h-1.5 bg-surface rounded-full overflow-hidden">
+                                    <div class="h-1.5 rounded-full transition-all duration-500 ${idx === 0 ? cfg.bar : 'bg-stone-300/80'}" style="width: ${pct}%"></div>
+                                </div>
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
             </article>`;
@@ -1509,7 +1522,6 @@
                     advice = row[4] || '';
                 }
 
-                // 表格匯入一律視為餐點，避免水煮蛋、水蓮等食材被誤判為喝水
                 const newEntry = {
                     id: 'import_' + Date.now() + Math.random().toString(36).substring(7),
                     type: 'meal',
