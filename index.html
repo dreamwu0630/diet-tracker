@@ -7,409 +7,348 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Chart.js 圖表庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#FBF9F5',
+                        surface: '#FFFFFF',
+                        oat: '#F4EFE6',
+                        'oat-dark': '#C9A982',
+                        sage: '#6E8B74',
+                        'sage-soft': '#EEF3EF',
+                        ink: '#2E2C29',
+                        muted: '#8A847C'
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 24px -4px rgba(46, 44, 41, 0.04)',
+                        'float': '0 10px 30px -6px rgba(46, 44, 41, 0.16)'
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body { 
-            background-color: #FBF9F5; 
-            color: #2D2B2A;
-            font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
+        html { scroll-behavior: smooth; }
+        body {
+            background-color: #FBF9F5;
+            color: #2E2C29;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            letter-spacing: 0.01em;
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 卡片展開動畫 */
+        .note-drawer {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.28s ease, opacity 0.25s ease;
+            opacity: 0;
+        }
+        .note-drawer.open {
+            grid-template-rows: 1fr;
+            opacity: 1;
+        }
+        .note-drawer > div {
+            overflow: hidden;
+        }
+        .chevron-icon {
+            transition: transform 0.25s ease;
+        }
+        .chevron-icon.rotated {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
-<body class="antialiased selection:bg-amber-100 selection:text-amber-900">
+<body class="antialiased selection:bg-sage-soft selection:text-sage">
 
-<div class="max-w-5xl mx-auto min-h-screen relative p-4 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 pb-24 md:pb-8">
-    
-    <!-- 左側：今日概況與生活數據 -->
+<div class="max-w-5xl mx-auto min-h-screen relative px-4 pt-5 pb-28 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8">
+
+    <!-- 左側：今日概況與體態 -->
     <div class="w-full md:w-80 flex-shrink-0 md:sticky md:top-8 h-fit space-y-5">
-        
-        <!-- 今日概況卡片 -->
-        <header class="p-6 bg-white rounded-2xl border border-stone-200 shadow-sm relative">
+
+        <!-- 今日概況卡片（去框中框、大留白） -->
+        <header class="p-6 bg-surface rounded-3xl shadow-soft">
             <div class="flex justify-between items-start mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-stone-800 tracking-tight">今日飲食概況</h1>
-                    <p class="text-stone-400 text-sm mt-1 font-medium" id="current-date">載入中...</p>
+                    <p class="text-xs text-muted font-medium tracking-wide" id="current-date">載入中...</p>
+                    <h1 class="text-2xl font-bold text-ink tracking-tight mt-1">今日飲食手帳</h1>
                 </div>
-                <button onclick="openDataModal()" class="p-2.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition" title="資料管理">
-                    <i class="ph ph-sliders text-xl"></i>
+                <button onclick="openDataModal()" class="p-2.5 text-muted hover:text-ink hover:bg-oat rounded-2xl transition" title="資料管理與匯入">
+                    <i class="ph ph-sliders-horizontal text-xl"></i>
                 </button>
             </div>
-            
-            <div class="grid grid-cols-2 gap-4 pb-5 border-b border-stone-100">
+
+            <!-- 熱量與蛋白質主數字 -->
+            <div class="grid grid-cols-2 gap-4 pb-6">
                 <div>
-                    <p class="text-sm text-stone-500 mb-1">攝取熱量</p>
+                    <p class="text-xs text-muted mb-1.5">今日熱量</p>
                     <div class="flex items-baseline gap-1">
-                        <span class="text-3xl font-bold tracking-tight text-stone-800" id="total-cals">0</span>
-                        <span class="text-sm text-stone-400">大卡</span>
+                        <span class="text-3xl font-bold tracking-tight text-ink" id="total-cals">0</span>
+                        <span class="text-xs text-muted">大卡</span>
                     </div>
                 </div>
                 <div>
-                    <p class="text-sm text-stone-500 mb-1">蛋白質</p>
+                    <p class="text-xs text-muted mb-1.5">蛋白質</p>
                     <div class="flex items-baseline gap-1">
-                        <span class="text-3xl font-bold tracking-tight text-stone-800" id="total-protein">0</span>
-                        <span class="text-sm text-stone-400">公克</span>
+                        <span class="text-3xl font-bold tracking-tight text-sage" id="total-protein">0</span>
+                        <span class="text-xs text-muted">公克</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 最新體態 -->
-            <div class="mt-4 pt-1 cursor-pointer group" onclick="openScaleModal()">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm font-bold text-stone-600 flex items-center gap-1.5">
-                        <i class="ph ph-scales text-stone-500 text-lg"></i> 最新體態紀錄
-                    </span>
-                    <span id="scale-date" class="text-xs text-stone-400 group-hover:text-stone-600 transition">尚未紀錄</span>
+            <!-- 溫和進度條區：蛋白質 + 水分 -->
+            <div class="space-y-4 py-5 border-y border-stone-100">
+                <!-- 蛋白質進度條（鼠尾草綠） -->
+                <div>
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <span class="text-ink/80 font-medium flex items-center gap-1.5">
+                            <i class="ph-fill ph-leaf text-sage text-sm"></i> 蛋白質目標
+                        </span>
+                        <span id="protein-status" class="text-sage font-medium">還差 70g</span>
+                    </div>
+                    <div class="w-full bg-sage-soft rounded-full h-2 overflow-hidden">
+                        <div class="bg-sage h-2 rounded-full transition-all duration-500" id="protein-bar" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 bg-stone-50 rounded-xl p-3 border border-stone-100 text-center">
-                    <div>
-                        <p class="text-xs text-stone-400">體重</p>
-                        <p class="font-semibold text-base text-stone-700 mt-1" id="display-weight">-</p>
+
+                <!-- 水分進度條（暖燕麥色） -->
+                <div>
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <span class="text-ink/80 font-medium flex items-center gap-1.5">
+                            <i class="ph-fill ph-drop text-oat-dark text-sm"></i> 每日水分
+                        </span>
+                        <span id="water-text" class="text-muted font-medium">0 / 2000 ml</span>
                     </div>
-                    <div class="border-x border-stone-200">
-                        <p class="text-xs text-stone-400">體脂率</p>
-                        <p class="font-semibold text-base text-stone-700 mt-1" id="display-fat">-</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-stone-400">腰圍</p>
-                        <p class="font-semibold text-base text-stone-700 mt-1" id="display-waist">-</p>
+                    <div class="w-full bg-oat rounded-full h-2 overflow-hidden">
+                        <div class="bg-oat-dark h-2 rounded-full transition-all duration-500" id="water-bar" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 飲水目標 -->
-            <div class="mt-5 pt-4 border-t border-stone-100">
-                <div class="flex justify-between text-sm mb-2">
-                    <span class="text-stone-600 font-medium flex items-center gap-1.5">
-                        <i class="ph ph-drop text-amber-700 text-lg"></i> 每日水分
+            <!-- 最新體態（極簡純數字＋細分隔線） -->
+            <div class="mt-5 cursor-pointer group" onclick="openScaleModal()">
+                <div class="flex items-center justify-between mb-3.5">
+                    <span class="text-xs font-semibold text-ink/70 flex items-center gap-1.5">
+                        <i class="ph ph-scales text-muted text-base"></i> 最新體態
                     </span>
-                    <span id="water-text" class="text-stone-500 font-medium">0 / 2000 ml</span>
+                    <span id="scale-date" class="text-xs text-muted group-hover:text-sage transition flex items-center gap-1">
+                        點擊更新 <i class="ph ph-caret-right text-[11px]"></i>
+                    </span>
                 </div>
-                <div class="w-full bg-stone-100 rounded-full h-3 overflow-hidden">
-                    <div class="bg-amber-600/80 h-3 rounded-full transition-all duration-500" id="water-bar" style="width: 0%"></div>
+                <div class="grid grid-cols-3 divide-x divide-stone-200/60 text-center py-1">
+                    <div class="px-1">
+                        <p class="text-[11px] text-muted">體重</p>
+                        <p class="font-semibold text-base text-ink mt-1" id="display-weight">-</p>
+                    </div>
+                    <div class="px-1">
+                        <p class="text-[11px] text-muted">體脂率</p>
+                        <p class="font-semibold text-base text-ink mt-1" id="display-fat">-</p>
+                    </div>
+                    <div class="px-1">
+                        <p class="text-[11px] text-muted">腰圍</p>
+                        <p class="font-semibold text-base text-ink mt-1" id="display-waist">-</p>
+                    </div>
                 </div>
             </div>
         </header>
 
-        <!-- 快速手動補登按鈕 -->
-        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
-            <h2 class="text-sm font-bold text-stone-400 mb-4 px-1 tracking-wider uppercase">快捷操作</h2>
-            <div class="grid grid-cols-4 gap-3">
-                <button onclick="openModal('meal', '早餐')" class="flex flex-col items-center justify-center py-4 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
-                    <i class="ph ph-coffee text-2xl mb-1.5"></i>
-                    <span class="text-sm font-medium">早餐</span>
+        <!-- 桌機版快速紀錄（手機版已整合到底部懸浮膠囊列，但保留快速餐別點選） -->
+        <div class="hidden md:block bg-surface p-5 rounded-3xl shadow-soft">
+            <h2 class="text-xs font-semibold text-muted mb-3.5 px-1 tracking-wider">快速紀錄</h2>
+            <div class="grid grid-cols-4 gap-2.5">
+                <button onclick="openModal('meal', '早餐')" class="flex flex-col items-center justify-center py-3.5 bg-paper hover:bg-oat text-ink rounded-2xl transition active:scale-95">
+                    <i class="ph ph-coffee text-xl mb-1 text-oat-dark"></i>
+                    <span class="text-xs font-medium">早餐</span>
                 </button>
-                <button onclick="openModal('meal', '午餐')" class="flex flex-col items-center justify-center py-4 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
-                    <i class="ph ph-bowl-food text-2xl mb-1.5"></i>
-                    <span class="text-sm font-medium">午餐</span>
+                <button onclick="openModal('meal', '午餐')" class="flex flex-col items-center justify-center py-3.5 bg-paper hover:bg-oat text-ink rounded-2xl transition active:scale-95">
+                    <i class="ph ph-bowl-food text-xl mb-1 text-sage"></i>
+                    <span class="text-xs font-medium">午餐</span>
                 </button>
-                <button onclick="openModal('meal', '晚餐')" class="flex flex-col items-center justify-center py-4 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
-                    <i class="ph ph-cooking-pot text-2xl mb-1.5"></i>
-                    <span class="text-sm font-medium">晚餐</span>
+                <button onclick="openModal('meal', '晚餐')" class="flex flex-col items-center justify-center py-3.5 bg-paper hover:bg-oat text-ink rounded-2xl transition active:scale-95">
+                    <i class="ph ph-cooking-pot text-xl mb-1 text-stone-500"></i>
+                    <span class="text-xs font-medium">晚餐</span>
                 </button>
-                <button onclick="addWater()" class="flex flex-col items-center justify-center py-4 bg-stone-50 hover:bg-stone-100 text-stone-700 rounded-xl transition active:scale-95 border border-stone-100">
-                    <i class="ph ph-drop text-2xl mb-1.5 text-amber-700"></i>
-                    <span class="text-sm font-medium">+250ml</span>
+                <button onclick="addWater()" class="flex flex-col items-center justify-center py-3.5 bg-paper hover:bg-oat text-ink rounded-2xl transition active:scale-95">
+                    <i class="ph ph-drop text-xl mb-1 text-oat-dark"></i>
+                    <span class="text-xs font-medium">+250ml</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 右側：AI 圖文速記框 ＋ 分析圖表 ＋ 飲食時間軸 -->
-    <div class="flex-1 w-full bg-white rounded-2xl border border-stone-200 shadow-sm p-5 md:p-8 min-h-[80vh] space-y-8">
-        
-        <!-- 【全新功能】圖文合一 AI 速記輸入卡片 -->
-        <div class="p-5 bg-stone-50/90 rounded-2xl border border-stone-200 relative">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-sm font-bold text-stone-800 flex items-center gap-1.5">
-                    <i class="ph ph-sparkle text-amber-600 text-lg"></i> AI 飲食速記（圖文合一，單次發送）
-                </span>
-                <!-- 餐別快捷選擇標籤 -->
-                <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-stone-200 text-xs" id="quick-meal-selector">
-                    <button type="button" onclick="selectQuickMeal('早餐')" data-qmeal="早餐" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">早</button>
-                    <button type="button" onclick="selectQuickMeal('午餐')" data-qmeal="午餐" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">午</button>
-                    <button type="button" onclick="selectQuickMeal('晚餐')" data-qmeal="晚餐" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">晚</button>
-                    <button type="button" onclick="selectQuickMeal('宵夜')" data-qmeal="宵夜" class="qmeal-btn px-2 py-0.5 rounded text-stone-600">宵夜</button>
-                </div>
-            </div>
+    <!-- 右側：趨勢圖表與飲食時間軸 -->
+    <div class="flex-1 w-full space-y-6">
 
-            <!-- 文字輸入框 -->
-            <textarea id="quick-input-text" rows="2" placeholder="描述餐點或補充感受（例如：雞腿便當飯減半，下午有喝美式無心悸）..." class="w-full p-3 text-sm bg-white border border-stone-200 rounded-xl outline-none focus:border-stone-400 transition-colors resize-none mb-3"></textarea>
-
-            <!-- 照片選擇預覽區與操作列 -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <input type="file" id="quick-input-file" accept="image/*" class="hidden" onchange="handleQuickImageSelect(event)">
-                    <button type="button" onclick="document.getElementById('quick-input-file').click()" class="px-3 py-2 bg-white hover:bg-stone-100 border border-stone-200 rounded-xl text-xs font-semibold text-stone-700 flex items-center gap-1.5 transition">
-                        <i class="ph ph-camera text-base text-amber-700"></i>
-                        <span id="quick-file-status">附加照片</span>
-                    </button>
-                    
-                    <!-- 圖片縮圖預覽 -->
-                    <div id="quick-img-preview-box" class="hidden items-center gap-1.5 bg-white border border-stone-200 px-2 py-1 rounded-xl">
-                        <img id="quick-img-preview" src="" alt="預覽" class="w-6 h-6 object-cover rounded">
-                        <span class="text-[11px] text-stone-500 max-w-[100px] truncate" id="quick-img-name"></span>
-                        <button type="button" onclick="removeQuickImage()" class="text-stone-400 hover:text-rose-500 ml-1">
-                            <i class="ph ph-x-circle text-sm"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 送出按鈕 -->
-                <button type="button" id="quick-submit-btn" onclick="submitQuickEntry()" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50">
-                    <i class="ph ph-paper-plane-right text-sm"></i>
-                    <span>送出紀錄</span>
-                </button>
-            </div>
-            
-            <p id="quick-tip-msg" class="text-[11px] text-stone-400 mt-2 px-1">支援「一張照片＋文字」一次打包發送，不再拆成兩筆紀錄。</p>
-        </div>
-
-        <!-- 圖表分析區塊 -->
-        <div class="p-5 bg-stone-50/90 rounded-2xl border border-stone-200">
-            <div class="flex flex-col gap-3 mb-4">
-                <div class="flex flex-wrap justify-between items-center gap-2">
-                    <h2 class="text-base font-bold text-stone-800 tracking-tight flex items-center gap-2">
-                        <i class="ph ph-chart-bar text-xl text-stone-700"></i> 飲食代謝趨勢
+        <!-- 趨勢分析卡片（柔和粉質純柱狀圖） -->
+        <section id="trend-section" class="bg-surface rounded-3xl shadow-soft p-5 md:p-7">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                <div>
+                    <h2 class="text-base font-bold text-ink flex items-center gap-2">
+                        <i class="ph ph-chart-bar text-xl text-sage"></i> 近期飲食節奏
                     </h2>
-                    
-                    <div class="flex items-center gap-2">
-                        <!-- 門診專用按鈕 -->
-                        <button onclick="openDoctorModal()" class="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition flex items-center gap-1 shadow-2xs">
-                            <i class="ph ph-first-aid text-sm"></i> 門診快讀卡
-                        </button>
-                        
-                        <!-- 時間天數下拉選單 -->
-                        <div class="flex items-center gap-1 bg-white border border-stone-200 rounded-lg px-2 py-1 shadow-2xs">
-                            <label for="daysSelect" class="text-xs text-stone-400 font-medium">區間:</label>
-                            <select id="daysSelect" onchange="setDaysFilter(this.value)" class="bg-transparent text-stone-700 text-xs font-bold outline-none cursor-pointer">
-                                <option value="7">7天</option>
-                                <option value="14" selected>14天</option>
-                                <option value="30">30天</option>
-                                <option value="0">全部</option>
-                            </select>
-                        </div>
-                    </div>
+                    <p class="text-xs text-muted mt-0.5">點擊柱子可查看當日明細</p>
                 </div>
 
-                <!-- 指標與餐別切換列 -->
-                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-stone-200/60">
-                    <div class="flex items-center gap-1 bg-stone-200/60 p-1 rounded-lg text-xs font-bold">
-                        <button onclick="setMetricMode('cal')" id="btn-metric-cal" class="px-2.5 py-1 rounded-md bg-white text-stone-800 shadow-2xs">熱量 (kcal)</button>
-                        <button onclick="setMetricMode('pro')" id="btn-metric-pro" class="px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800 font-medium">蛋白質 (g)</button>
+                <!-- 指標切換 + 天數下拉選單 -->
+                <div class="flex items-center gap-2">
+                    <div class="flex bg-paper p-1 rounded-full">
+                        <button onclick="setChartMetric('calories')" id="metric-cal-btn" class="text-xs font-medium px-3 py-1.5 rounded-full bg-surface text-ink shadow-xs transition">熱量</button>
+                        <button onclick="setChartMetric('protein')" id="metric-pro-btn" class="text-xs font-medium px-3 py-1.5 rounded-full text-muted hover:text-ink transition">蛋白質</button>
                     </div>
-                    
-                    <div class="flex items-center gap-1 overflow-x-auto hide-scrollbar text-xs font-medium">
-                        <button onclick="setMealFilter('all')" data-meal="all" class="meal-btn px-2.5 py-1 rounded-lg bg-stone-800 text-white font-bold">整日堆疊</button>
-                        <button onclick="setMealFilter('早餐')" data-meal="早餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">早</button>
-                        <button onclick="setMealFilter('午餐')" data-meal="午餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">午</button>
-                        <button onclick="setMealFilter('晚餐')" data-meal="晚餐" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">晚</button>
-                        <button onclick="setMealFilter('宵夜')" data-meal="宵夜" class="meal-btn px-2 py-1 rounded-lg bg-white border border-stone-200 text-stone-600">宵夜</button>
-                    </div>
+                    <select id="chart-range-select" onchange="setChartRange(this.value)" class="text-xs font-medium bg-paper text-ink px-3 py-2 rounded-full outline-none cursor-pointer border-0">
+                        <option value="7">近 7 天</option>
+                        <option value="14" selected>近 14 天</option>
+                        <option value="30">近 30 天</option>
+                        <option value="all">全部</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- 圖表畫布容器 -->
-            <div class="relative w-full h-56 md:h-64 bg-white rounded-xl p-3 border border-stone-200/80">
+            <div class="relative w-full h-56 md:h-64">
                 <canvas id="dietTrendChart"></canvas>
             </div>
-            
-            <div class="flex justify-between items-center text-xs text-stone-400 mt-2.5 px-1">
-                <span id="chart-subtext">粉質低飽和堆疊：長條高度為當日總量，內部為各餐佔比</span>
-                <span id="chart-avg-text" class="font-medium text-stone-600"></span>
-            </div>
-        </div>
+        </section>
 
-        <!-- 時間軸標題列與特定日期搜尋器 -->
-        <div>
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-stone-100">
-                <h2 class="text-base font-bold text-stone-700 tracking-wider flex items-center gap-2">
-                    <i class="ph ph-book-open text-xl text-stone-400"></i> 飲食紀錄時間軸
+        <!-- 飲食紀錄時間軸 -->
+        <section class="bg-surface rounded-3xl shadow-soft p-5 md:p-7 min-h-[60vh]">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <h2 class="text-base font-bold text-ink flex items-center gap-2">
+                    <i class="ph ph-book-open-text text-xl text-oat-dark"></i> 飲食日記
                 </h2>
-                
+
+                <!-- 特定日期快搜 -->
                 <div class="flex items-center gap-2">
                     <div class="relative flex items-center">
-                        <i class="ph ph-magnifying-glass absolute left-2.5 text-stone-400 text-sm"></i>
-                        <input type="date" id="search-date-input" onchange="handleDateSearch(this.value)" class="pl-8 pr-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-700 outline-none focus:border-stone-400 focus:bg-white transition">
+                        <input type="date" id="date-search-input" onchange="handleDateSearch(this.value)" class="text-xs bg-paper text-ink px-3.5 py-2 rounded-full outline-none cursor-pointer">
                     </div>
-                    <button id="clear-search-btn" onclick="clearDateSearch()" class="hidden px-2.5 py-1.5 text-xs bg-stone-100 hover:bg-stone-200 text-stone-600 font-medium rounded-lg transition">
-                        清除搜尋
+                    <button id="clear-date-btn" onclick="clearDateSearch()" class="hidden text-xs text-muted hover:text-ink bg-oat px-3 py-2 rounded-full transition">
+                        顯示全部
                     </button>
                 </div>
             </div>
-            
-            <!-- 搜尋狀態提示 -->
-            <div id="search-banner" class="hidden mb-4 p-3 bg-amber-50/80 border border-amber-200/70 rounded-xl text-xs text-amber-900 flex justify-between items-center">
-                <span id="search-banner-text">目前僅顯示指定日期之紀錄</span>
-                <button onclick="clearDateSearch()" class="font-bold underline text-amber-800">返回完整列表</button>
+
+            <!-- 橫向藥丸餐別篩選列 -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-5 hide-scrollbar" id="timeline-filter-bar">
+                <button onclick="setTimelineFilter('all')" data-cat="all" class="tl-pill shrink-0 text-xs font-medium px-4 py-1.5 rounded-full bg-ink text-paper transition">全部</button>
+                <button onclick="setTimelineFilter('早餐')" data-cat="早餐" class="tl-pill shrink-0 text-xs font-medium px-4 py-1.5 rounded-full bg-paper text-muted hover:text-ink transition">早餐</button>
+                <button onclick="setTimelineFilter('午餐')" data-cat="午餐" class="tl-pill shrink-0 text-xs font-medium px-4 py-1.5 rounded-full bg-paper text-muted hover:text-ink transition">午餐</button>
+                <button onclick="setTimelineFilter('晚餐')" data-cat="晚餐" class="tl-pill shrink-0 text-xs font-medium px-4 py-1.5 rounded-full bg-paper text-muted hover:text-ink transition">晚餐</button>
+                <button onclick="setTimelineFilter('宵夜')" data-cat="宵夜" class="tl-pill shrink-0 text-xs font-medium px-4 py-1.5 rounded-full bg-paper text-muted hover:text-ink transition">宵夜</button>
             </div>
 
-            <!-- 飲食記錄容器 -->
             <div id="timeline-container" class="space-y-6"></div>
 
-            <!-- Lazy Loading 觸底偵測與提示 -->
-            <div id="loading-sentinel" class="py-6 text-center text-xs text-stone-400"></div>
-        </div>
+            <!-- 分頁載入按鈕 -->
+            <div id="load-more-wrapper" class="hidden text-center pt-6">
+                <button onclick="loadMoreDays()" class="text-xs font-medium text-muted hover:text-ink bg-paper hover:bg-oat px-5 py-2.5 rounded-full transition">
+                    載入更早的紀錄
+                </button>
+            </div>
+        </section>
     </div>
-
-    <!-- 浮動新增按鈕（手機版） -->
-    <button onclick="openModal('meal', '點心/其他')" class="fixed bottom-6 right-6 md:hidden w-14 h-14 bg-stone-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-stone-700 transition active:scale-90 z-20">
-        <i class="ph ph-plus text-3xl font-bold"></i>
-    </button>
 </div>
 
-<!-- 門診專用彈窗（14天 / 30天 切換、雙指標佔比與語意聚合） -->
-<div id="doctor-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-200 flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl p-5 sm:p-6 shadow-xl border border-stone-200 overflow-y-auto max-h-[90vh]" id="doctor-modal-content">
-        <div class="flex justify-between items-start mb-3 pb-3 border-b border-stone-100">
-            <div>
-                <h3 class="text-base sm:text-lg font-bold text-stone-800 flex items-center gap-1.5">
-                    <i class="ph ph-stethoscope text-emerald-700 text-xl"></i> 減重代謝門診摘要
-                </h3>
-                <p class="text-xs text-stone-400 mt-0.5" id="doctor-summary-range">統計區間計算中...</p>
-            </div>
-            <button onclick="closeModal('doctor-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
-                <i class="ph ph-x text-xl"></i>
-            </button>
-        </div>
+<!-- 手機拇指區：半透明霧面懸浮膠囊快捷列 -->
+<nav class="fixed bottom-5 left-1/2 -translate-x-1/2 md:hidden z-30 flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-[#2E2C29]/90 backdrop-blur-md text-[#FBF9F5] shadow-float">
+    <button onclick="openModal('meal', '午餐')" class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-sage text-white text-xs font-semibold active:scale-95 transition">
+        <i class="ph-bold ph-plus text-sm"></i> 記一餐
+    </button>
+    <button onclick="addWater()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-full hover:bg-white/10 text-xs font-medium active:scale-95 transition">
+        <i class="ph ph-drop text-base text-oat-dark"></i> +250ml
+    </button>
+    <button onclick="scrollToTrend()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-full hover:bg-white/10 text-xs font-medium active:scale-95 transition">
+        <i class="ph ph-chart-bar text-base text-stone-300"></i> 看趨勢
+    </button>
+</nav>
 
-        <!-- 門診天數切換標籤：14天 與 30天 -->
-        <div class="flex items-center gap-2 mb-4 bg-stone-100/80 p-1 rounded-xl">
-            <span class="text-xs text-stone-500 font-bold ml-2">觀察週期:</span>
-            <button onclick="setDoctorDays(14)" id="doc-btn-14" class="doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-2xs">近 14 天</button>
-            <button onclick="setDoctorDays(30)" id="doc-btn-30" class="doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition text-stone-600 hover:text-stone-900">近 30 天</button>
-        </div>
-        
-        <div class="space-y-4 text-stone-700 text-xs">
-            <!-- 核心指標看板 -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-200/70">
-                    <p class="text-stone-400 text-[11px]">目前體重</p>
-                    <p class="text-sm sm:text-base font-bold text-stone-800 mt-0.5" id="doc-weight">-</p>
-                </div>
-                <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-200/70">
-                    <p class="text-stone-400 text-[11px]">目前腰圍</p>
-                    <p class="text-sm sm:text-base font-bold text-stone-800 mt-0.5" id="doc-waist">-</p>
-                </div>
-                <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-200/70">
-                    <p class="text-stone-400 text-[11px]">日均熱量</p>
-                    <p class="text-sm sm:text-base font-bold text-stone-800 mt-0.5" id="doc-avg-cal">-</p>
-                </div>
-                <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-200/70">
-                    <p class="text-stone-400 text-[11px]">日均蛋白質</p>
-                    <p class="text-sm sm:text-base font-bold text-emerald-700 mt-0.5" id="doc-avg-pro">-</p>
-                </div>
-            </div>
-
-            <!-- 各餐佔比（熱量 ＋ 蛋白質雙指標） -->
-            <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200/70">
-                <p class="font-bold text-stone-700 mb-2 flex items-center justify-between">
-                    <span class="flex items-center gap-1"><i class="ph ph-pie-chart text-stone-500"></i> 各餐佔比分配（熱量 ｜ 蛋白質）</span>
-                    <span class="text-[11px] text-stone-400 font-normal">綠字為蛋白質佔比</span>
-                </p>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center font-medium" id="doc-meal-ratios">
-                    <!-- JS 動態填入 -->
-                </div>
-            </div>
-
-            <!-- 各餐常態飲食結構（智慧語意歸納品項排行與型態分析） -->
-            <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200/70 space-y-3">
-                <p class="font-bold text-stone-700 flex items-center gap-1 pb-1 border-b border-stone-200/60">
-                    <i class="ph ph-fork-knife text-stone-500"></i> 常態飲食結構（常見品項頻率排行與型態分析）
-                </p>
-                
-                <div id="doc-food-structures" class="space-y-3">
-                    <!-- JS 動態生成早、午、晚、宵夜結構 -->
-                </div>
-            </div>
-
-            <!-- 關鍵飲食特徵與破口統計 -->
-            <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200/70 space-y-2">
-                <p class="font-bold text-stone-700 flex items-center gap-1">
-                    <i class="ph ph-check-circle text-emerald-600"></i> 飲食執行亮點與盲點提示
-                </p>
-                <ul class="space-y-1.5 text-stone-600 leading-relaxed list-disc list-inside" id="doc-insights-list">
-                    <li>分析中...</li>
-                </ul>
-            </div>
-
-            <!-- 門診溝通重點 -->
-            <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/70 leading-relaxed text-amber-900">
-                <p class="font-bold text-amber-950 mb-1 flex items-center gap-1">
-                    <i class="ph ph-chat-circle-dots text-amber-800"></i> 建議現場回報重點：
-                </p>
-                <p id="doc-talk-guide">「醫師好，這是我近期飲食總結：每日蛋白質平均有維持在近 70 克；打藥後前 1~2 天食慾較低，偶爾晚餐澱粉較多會容易脹氣嗜睡，宵夜已多轉為無糖優格，您看目前的代謝走向與劑量是否需微調？」</p>
-            </div>
-        </div>
+<!-- 柔和提示條 (Toast) -->
+<div id="toast-container" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 translate-y-2">
+    <div class="bg-[#2E2C29]/92 backdrop-blur-md text-[#FBF9F5] text-xs font-medium px-4 py-2.5 rounded-full shadow-float flex items-center gap-2 whitespace-nowrap">
+        <i id="toast-icon" class="ph-fill ph-check-circle text-sage text-base"></i>
+        <span id="toast-message">已儲存</span>
     </div>
 </div>
 
 <!-- 體態彈窗 -->
-<div id="scale-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-7 shadow-xl border border-stone-100" id="scale-modal-content">
+<div id="scale-modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-xs z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
+    <div class="bg-surface w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-7 shadow-xl" id="scale-modal-content">
         <div class="flex justify-between items-center mb-5">
-            <h3 class="text-lg font-bold text-stone-800">記錄體態數據</h3>
-            <button onclick="closeModal('scale-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
-                <i class="ph ph-x text-xl"></i>
+            <h3 class="text-lg font-bold text-ink">更新體態數據</h3>
+            <button onclick="closeModal('scale-modal')" class="p-2 text-muted hover:text-ink rounded-full bg-paper">
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-stone-600 mb-1.5">體重 (kg)</label>
-                <input type="number" step="0.1" id="input-weight" class="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-base outline-none focus:border-stone-400 focus:bg-white transition-colors">
+                <label class="block text-xs font-medium text-muted mb-1.5">體重 (kg)</label>
+                <input type="number" step="0.1" id="input-weight" placeholder="例如：72.5" class="w-full bg-paper rounded-2xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-sage/30 transition">
             </div>
-            <div>
-                <label class="block text-sm font-medium text-stone-600 mb-1.5">體脂率 (%)</label>
-                <input type="number" step="0.1" id="input-fat" class="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-base outline-none focus:border-stone-400 focus:bg-white transition-colors">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-muted mb-1.5">體脂率 (%) 選填</label>
+                    <input type="number" step="0.1" id="input-fat" placeholder="-" class="w-full bg-paper rounded-2xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-sage/30 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-muted mb-1.5">腰圍 (cm) 選填</label>
+                    <input type="number" step="0.1" id="input-waist" placeholder="-" class="w-full bg-paper rounded-2xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-sage/30 transition">
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-stone-600 mb-1.5">腰圍 (cm)</label>
-                <input type="number" step="0.1" id="input-waist" class="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-base outline-none focus:border-stone-400 focus:bg-white transition-colors">
-            </div>
-            <button onclick="saveScaleData()" class="w-full bg-stone-800 text-white font-medium rounded-xl py-3.5 text-base hover:bg-stone-700 transition mt-4">
+            <button onclick="saveScaleData()" class="w-full bg-ink text-paper font-medium rounded-2xl py-3.5 text-sm hover:opacity-90 transition mt-2">
                 儲存紀錄
             </button>
         </div>
     </div>
 </div>
 
-<!-- 手動補登彈窗 -->
-<div id="entry-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-7 shadow-xl border border-stone-100" id="modal-content">
+<!-- 飲食手動新增彈窗 -->
+<div id="entry-modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-xs z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
+    <div class="bg-surface w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-7 shadow-xl" id="modal-content">
         <div class="flex justify-between items-center mb-5">
-            <h3 class="text-lg font-bold text-stone-800" id="modal-title">手動紀錄</h3>
-            <button onclick="closeModal('entry-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
-                <i class="ph ph-x text-xl"></i>
+            <h3 class="text-lg font-bold text-ink" id="modal-title">記一餐</h3>
+            <button onclick="closeModal('entry-modal')" class="p-2 text-muted hover:text-ink rounded-full bg-paper">
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
         <div class="space-y-4">
-            <input type="hidden" id="entry-type" value="">
+            <!-- 餐別快速切換 -->
+            <div class="flex gap-1.5 flex-wrap" id="modal-category-pills">
+                <button type="button" onclick="selectModalCategory('早餐')" data-mcat="早餐" class="mcat-btn text-xs px-3 py-1.5 rounded-full bg-paper text-muted transition">早餐</button>
+                <button type="button" onclick="selectModalCategory('午餐')" data-mcat="午餐" class="mcat-btn text-xs px-3 py-1.5 rounded-full bg-paper text-muted transition">午餐</button>
+                <button type="button" onclick="selectModalCategory('晚餐')" data-mcat="晚餐" class="mcat-btn text-xs px-3 py-1.5 rounded-full bg-paper text-muted transition">晚餐</button>
+                <button type="button" onclick="selectModalCategory('宵夜')" data-mcat="宵夜" class="mcat-btn text-xs px-3 py-1.5 rounded-full bg-paper text-muted transition">宵夜</button>
+                <button type="button" onclick="selectModalCategory('點心/其他')" data-mcat="點心/其他" class="mcat-btn text-xs px-3 py-1.5 rounded-full bg-paper text-muted transition">點心</button>
+            </div>
+            <input type="hidden" id="entry-type" value="午餐">
+
             <div>
-                <label class="block text-sm font-medium text-stone-600 mb-1.5">餐點內容</label>
-                <input type="text" id="entry-content" placeholder="例如：烤雞腿便當" class="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-base outline-none focus:border-stone-400 focus:bg-white transition-colors">
+                <label class="block text-xs font-medium text-muted mb-1.5">吃了什麼</label>
+                <input type="text" id="entry-content" placeholder="例如：手撕雞餐盒、少飯" class="w-full bg-paper rounded-2xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-sage/30 transition">
             </div>
             <div>
-                <label class="block text-sm font-medium text-stone-600 mb-1.5">備註 / 情境</label>
-                <input type="text" id="entry-context" placeholder="例如：少飯、外送" class="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-base outline-none focus:border-stone-400 focus:bg-white transition-colors">
+                <label class="block text-xs font-medium text-muted mb-1.5">備註 / 身體感覺（選填）</label>
+                <input type="text" id="entry-context" placeholder="例如：八分飽、飯後不累" class="w-full bg-paper rounded-2xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-sage/30 transition">
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-sm font-medium text-stone-600 mb-1.5">估算熱量 (大卡)</label>
-                    <input type="number" id="entry-cals" placeholder="選填" class="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-base outline-none focus:border-stone-400 focus:bg-white transition-colors">
+                    <label class="block text-xs font-medium text-muted mb-1.5">估算熱量 (大卡)</label>
+                    <input type="number" id="entry-cals" placeholder="選填" class="w-full bg-paper rounded-2xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-sage/30 transition">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-stone-600 mb-1.5">蛋白質 (克)</label>
-                    <input type="number" id="entry-protein" placeholder="選填" class="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-base outline-none focus:border-stone-400 focus:bg-white transition-colors">
+                    <label class="block text-xs font-medium text-muted mb-1.5">蛋白質 (克)</label>
+                    <input type="number" id="entry-protein" placeholder="選填" class="w-full bg-paper rounded-2xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-sage/30 transition">
                 </div>
             </div>
-            <button onclick="saveEntry()" class="w-full bg-stone-800 text-white font-medium rounded-xl py-3.5 text-base hover:bg-stone-700 transition mt-4">
+            <button onclick="saveEntry()" class="w-full bg-sage text-white font-medium rounded-2xl py-3.5 text-sm hover:opacity-90 transition mt-2">
                 加入手帳
             </button>
         </div>
@@ -417,37 +356,37 @@
 </div>
 
 <!-- 資料管理彈窗 -->
-<div id="data-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
-    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-7 shadow-xl border border-stone-100 overflow-y-auto max-h-[85vh]" id="data-modal-content">
+<div id="data-modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-xs z-50 hidden opacity-0 transition-opacity duration-200 flex items-end sm:items-center justify-center">
+    <div class="bg-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl p-7 shadow-xl overflow-y-auto max-h-[85vh]" id="data-modal-content">
         <div class="flex justify-between items-center mb-5 pb-3 border-b border-stone-100">
-            <h3 class="text-lg font-bold text-stone-800">資料管理與手帳備份</h3>
-            <button onclick="closeModal('data-modal')" class="p-2 text-stone-400 hover:text-stone-600 rounded-lg bg-stone-100">
-                <i class="ph ph-x text-xl"></i>
+            <h3 class="text-lg font-bold text-ink">資料管理與備份</h3>
+            <button onclick="closeModal('data-modal')" class="p-2 text-muted hover:text-ink rounded-full bg-paper">
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
-        
+
         <div class="space-y-6">
             <div>
-                <h4 class="text-sm font-bold text-stone-700 mb-1.5">貼上 Markdown 筆記同步</h4>
-                <p class="text-xs text-stone-500 mb-3 leading-relaxed">可直接將表格貼在下方，系統會自動整理並同步到資料庫。</p>
-                <textarea id="import-text" rows="4" class="w-full p-4 text-sm bg-stone-50 border border-stone-200 rounded-xl outline-none focus:border-stone-400 focus:bg-white transition-colors resize-none" placeholder="貼上表格內容..."></textarea>
-                <button onclick="handleTextImport()" class="w-full mt-3 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition">
+                <h4 class="text-sm font-bold text-ink mb-1">貼上 Markdown 筆記同步</h4>
+                <p class="text-xs text-muted mb-3 leading-relaxed">把整理好的飲食表格貼在下方，會自動整理並同步到雲端。</p>
+                <textarea id="import-text" rows="4" class="w-full p-4 text-xs bg-paper rounded-2xl outline-none focus:ring-2 focus:ring-sage/30 resize-none" placeholder="貼上表格內容..."></textarea>
+                <button onclick="handleTextImport()" class="w-full mt-3 py-3 bg-ink text-paper text-sm font-medium rounded-2xl hover:opacity-90 transition">
                     執行同步更新
                 </button>
             </div>
 
             <div class="pt-4 border-t border-stone-100">
-                <h4 class="text-sm font-bold text-stone-700 mb-3">備份與重置</h4>
+                <h4 class="text-sm font-bold text-ink mb-3">備份與重置</h4>
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="exportData()" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl text-sm text-stone-700 font-medium text-center transition">
-                        匯出手帳備份
+                    <button onclick="exportData()" class="p-3 bg-paper hover:bg-oat rounded-2xl text-xs text-ink font-medium text-center transition">
+                        匯出備份 (JSON)
                     </button>
                     <input type="file" id="json-upload" accept=".json" class="hidden" onchange="handleJSONImport(event)">
-                    <button onclick="document.getElementById('json-upload').click()" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl text-sm text-stone-700 font-medium text-center transition">
-                        還原手帳備份
+                    <button onclick="document.getElementById('json-upload').click()" class="p-3 bg-paper hover:bg-oat rounded-2xl text-xs text-ink font-medium text-center transition">
+                        還原備份
                     </button>
                 </div>
-                <button onclick="clearAllData()" class="w-full mt-4 p-3 text-rose-600 hover:bg-rose-50 rounded-xl text-sm font-medium transition text-center border border-transparent hover:border-rose-100">
+                <button onclick="clearAllData()" class="w-full mt-4 p-3 text-rose-500 hover:bg-rose-50 rounded-2xl text-xs font-medium transition text-center">
                     清空所有歷史紀錄
                 </button>
             </div>
@@ -468,39 +407,51 @@
     const db = firebase.firestore();
 
     let state = {
-        entries: JSON.parse(localStorage.getItem('diet_entries_v4')) || [], 
-        scaleData: JSON.parse(localStorage.getItem('scale_entries_v2')) || [] 
+        entries: JSON.parse(localStorage.getItem('diet_entries_v4')) || [],
+        scaleData: JSON.parse(localStorage.getItem('scale_entries_v2')) || []
     };
+
     const DAILY_WATER_GOAL = 2000;
-    
-    // 圖表狀態變數
+    const DAILY_PROTEIN_GOAL = 70;
+
     let chartInstance = null;
-    let currentDaysFilter = 14; 
-    let currentMetricMode = 'cal'; 
-    let currentMealFilter = 'all'; 
+    let currentChartMetric = 'calories'; // 'calories' | 'protein'
+    let currentChartRange = '14';        // '7' | '14' | '30' | 'all'
+    let currentTimelineFilter = 'all';   // 'all' | '早餐' | '午餐' | '晚餐' | '宵夜'
+    let selectedSearchDate = '';         // 'YYYY-MM-DD'
+    let visibleDaysLimit = 14;
+    let toastTimer = null;
 
-    // 門診彈窗天數狀態 (預設 14 天)
-    let doctorDaysFilter = 14;
+    // 柔和提示條
+    function showToast(message, isError = false) {
+        const container = document.getElementById('toast-container');
+        const msgEl = document.getElementById('toast-message');
+        const iconEl = document.getElementById('toast-icon');
+        msgEl.textContent = message;
+        iconEl.className = isError
+            ? 'ph-fill ph-warning-circle text-rose-400 text-base'
+            : 'ph-fill ph-check-circle text-sage text-base';
 
-    // AI 速記狀態變數
-    let selectedQuickMeal = '午餐';
-    let selectedQuickImageBase64 = null;
+        container.classList.remove('opacity-0', 'translate-y-2');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            container.classList.add('opacity-0', 'translate-y-2');
+        }, 2200);
+    }
 
-    // Lazy loading 與搜尋狀態變數
-    let visibleDaysCount = 14; 
-    const DAYS_INCREMENT = 14; 
-    let selectedSearchDate = null; 
-    let observer = null;
+    function scrollToTrend() {
+        const el = document.getElementById('trend-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     async function syncFromFirebase() {
         try {
             const snapshot = await db.collection('diet_records').get();
             const cloudData = [];
-            
+
             snapshot.forEach(doc => {
                 const data = doc.data();
                 let timeStr = new Date().toISOString();
-                
                 if (data.createdAt) {
                     if (typeof data.createdAt.toDate === 'function') {
                         timeStr = data.createdAt.toDate().toISOString();
@@ -512,13 +463,13 @@
                 cloudData.push({
                     id: doc.id,
                     type: 'meal',
-                    category: data.type || '晚餐', 
+                    category: data.type || '晚餐',
                     title: data.title || '未命名餐點',
                     calories: parseInt(data.calories) || 0,
                     protein: parseInt(data.protein) || 0,
                     analysis: data.analysis || '',
                     advice: data.advice || '',
-                    context: data.context || 'LINE 同步',
+                    context: data.context || '',
                     timestamp: timeStr
                 });
             });
@@ -536,13 +487,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        updateDate(); 
-        initQuickMealTime();
-        renderDashboard(); 
+        updateDate();
+        renderDashboard();
         renderTimeline();
         renderScaleData();
         renderChart();
-        setupLazyLoading();
         syncFromFirebase();
     });
 
@@ -552,148 +501,24 @@
     }
 
     // ==========================================
-    // 【全新功能】圖文合一 AI 速記控制器
+    // 柔和粉質系純柱狀趨勢圖
     // ==========================================
-    function initQuickMealTime() {
-        const hour = new Date().getHours();
-        let defaultMeal = '午餐';
-        if (hour >= 5 && hour < 10) defaultMeal = '早餐';
-        else if (hour >= 10 && hour < 14) defaultMeal = '午餐';
-        else if (hour >= 14 && hour < 20) defaultMeal = '晚餐';
-        else defaultMeal = '宵夜';
-        selectQuickMeal(defaultMeal);
-    }
-
-    function selectQuickMeal(meal) {
-        selectedQuickMeal = meal;
-        document.querySelectorAll('.qmeal-btn').forEach(btn => {
-            if (btn.dataset.qmeal === meal) {
-                btn.className = 'qmeal-btn px-2 py-0.5 rounded bg-stone-800 text-white font-bold';
-            } else {
-                btn.className = 'qmeal-btn px-2 py-0.5 rounded text-stone-600 font-medium';
-            }
-        });
-    }
-
-    function handleQuickImageSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            selectedQuickImageBase64 = e.target.result;
-            document.getElementById('quick-img-preview').src = selectedQuickImageBase64;
-            document.getElementById('quick-img-name').textContent = file.name;
-            document.getElementById('quick-img-preview-box').classList.remove('hidden');
-            document.getElementById('quick-img-preview-box').classList.add('flex');
-            document.getElementById('quick-file-status').textContent = '更換照片';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function removeQuickImage() {
-        selectedQuickImageBase64 = null;
-        document.getElementById('quick-input-file').value = '';
-        document.getElementById('quick-img-preview-box').classList.add('hidden');
-        document.getElementById('quick-img-preview-box').classList.remove('flex');
-        document.getElementById('quick-file-status').textContent = '附加照片';
-    }
-
-    async function submitQuickEntry() {
-        const text = document.getElementById('quick-input-text').value.trim();
-        const hasImg = !!selectedQuickImageBase64;
-
-        if (!text && !hasImg) {
-            alert('請至少拍一張照片或輸入文字內容！');
-            return;
-        }
-
-        const submitBtn = document.getElementById('quick-submit-btn');
-        const tipMsg = document.getElementById('quick-tip-msg');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-sm"></i> <span>AI 分析處理中...</span>`;
-        tipMsg.textContent = '系統正在以單一封包同步圖文進行營養解析...';
-
-        // 建立整合圖文的單一傳輸 Payload
-        const payload = {
-            meal: selectedQuickMeal,
-            text: text || '',
-            image: selectedQuickImageBase64 || null,
-            timestamp: new Date().toISOString()
-        };
-
-        try {
-            // 如有配置 Make 專用 Webhook URL 可在此處直接呼叫
-            // 若為預覽狀態，直接建立本地暫存並發起即時更新
-            const mockEntry = {
-                id: 'quick_' + Date.now(),
-                type: 'meal',
-                category: selectedQuickMeal,
-                title: text ? text.slice(0, 30) : `${selectedQuickMeal} (照片速記)`,
-                context: hasImg ? '圖文合一速記' : '文字速記',
-                calories: selectedQuickMeal === '早餐' ? 280 : (selectedQuickMeal === '午餐' ? 520 : 580),
-                protein: selectedQuickMeal === '早餐' ? 8 : (selectedQuickMeal === '午餐' ? 30 : 25),
-                analysis: '系統已自動將照片與文字合併分析，避免多次拆分寫入。',
-                advice: '維持目前蛋白質充足攝取，並注意進食順序。',
-                timestamp: new Date().toISOString()
-            };
-
-            // 寫入本地與狀態更新
-            state.entries.unshift(mockEntry);
-            saveData();
-            renderDashboard();
-            renderTimeline();
-            renderChart();
-
-            // 清空輸入欄位
-            document.getElementById('quick-input-text').value = '';
-            removeQuickImage();
-            tipMsg.textContent = '✅ 已成功記錄！圖文已一次打包同步完畢。';
-            setTimeout(() => {
-                tipMsg.textContent = '支援「一張照片＋文字」一次打包發送，不再拆成兩筆紀錄。';
-            }, 3500);
-
-        } catch (error) {
-            console.error('速記提交失敗:', error);
-            alert('提交失敗，請檢查網路連線。');
-            tipMsg.textContent = '提交遇到問題，請稍候再試。';
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="ph ph-paper-plane-right text-sm"></i> <span>送出紀錄</span>`;
-        }
-    }
-
-    // ==========================================
-    // 圖表控制器
-    // ==========================================
-    function setDaysFilter(daysValue) {
-        currentDaysFilter = parseInt(daysValue);
-        renderChart();
-    }
-
-    function setMetricMode(mode) {
-        currentMetricMode = mode;
-        const btnCal = document.getElementById('btn-metric-cal');
-        const btnPro = document.getElementById('btn-metric-pro');
-        if (mode === 'cal') {
-            btnCal.className = 'px-2.5 py-1 rounded-md bg-white text-stone-800 shadow-2xs font-bold';
-            btnPro.className = 'px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800 font-medium';
+    function setChartMetric(metric) {
+        currentChartMetric = metric;
+        const calBtn = document.getElementById('metric-cal-btn');
+        const proBtn = document.getElementById('metric-pro-btn');
+        if (metric === 'calories') {
+            calBtn.className = 'text-xs font-medium px-3 py-1.5 rounded-full bg-surface text-ink shadow-xs transition';
+            proBtn.className = 'text-xs font-medium px-3 py-1.5 rounded-full text-muted hover:text-ink transition';
         } else {
-            btnPro.className = 'px-2.5 py-1 rounded-md bg-white text-stone-800 shadow-2xs font-bold';
-            btnCal.className = 'px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-800 font-medium';
+            proBtn.className = 'text-xs font-medium px-3 py-1.5 rounded-full bg-surface text-sage shadow-xs transition';
+            calBtn.className = 'text-xs font-medium px-3 py-1.5 rounded-full text-muted hover:text-ink transition';
         }
         renderChart();
     }
 
-    function setMealFilter(meal) {
-        currentMealFilter = meal;
-        document.querySelectorAll('.meal-btn').forEach(btn => {
-            if (btn.dataset.meal === meal) {
-                btn.className = 'meal-btn px-2.5 py-1 rounded-lg bg-stone-800 text-white font-bold';
-            } else {
-                btn.className = 'meal-btn px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-stone-600 font-medium';
-            }
-        });
+    function setChartRange(range) {
+        currentChartRange = range;
         renderChart();
     }
 
@@ -710,12 +535,10 @@
             const d = new Date(e.timestamp);
             const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const label = `${d.getMonth() + 1}/${d.getDate()}`;
-            
+
             if (!dailyMap.has(dateKey)) {
                 dailyMap.set(dateKey, {
-                    label: label,
-                    totalCal: 0,
-                    totalPro: 0,
+                    label,
                     meals: {
                         '早餐': { cal: 0, pro: 0 },
                         '午餐': { cal: 0, pro: 0 },
@@ -727,119 +550,77 @@
             }
 
             const item = dailyMap.get(dateKey);
-            const cal = parseInt(e.calories) || 0;
-            const pro = parseInt(e.protein) || 0;
-            item.totalCal += cal;
-            item.totalPro += pro;
-
             let cat = '點心/其他';
             if (e.category && e.category.includes('早')) cat = '早餐';
             else if (e.category && e.category.includes('午')) cat = '午餐';
             else if (e.category && e.category.includes('晚')) cat = '晚餐';
             else if (e.category && (e.category.includes('宵夜') || e.category.includes('夜'))) cat = '宵夜';
 
-            if (item.meals[cat]) {
-                item.meals[cat].cal += cal;
-                item.meals[cat].pro += pro;
-            } else {
-                item.meals['點心/其他'].cal += cal;
-                item.meals['點心/其他'].pro += pro;
-            }
+            item.meals[cat].cal += parseInt(e.calories) || 0;
+            item.meals[cat].pro += parseInt(e.protein) || 0;
         });
 
         let dayList = Array.from(dailyMap.values());
-
-        if (currentDaysFilter > 0 && dayList.length > currentDaysFilter) {
-            dayList = dayList.slice(-currentDaysFilter);
+        if (currentChartRange !== 'all') {
+            const limit = parseInt(currentChartRange);
+            dayList = dayList.slice(-limit);
         }
 
         const labels = dayList.map(d => d.label);
-        const isCal = (currentMetricMode === 'cal');
-        const metricUnit = isCal ? 'kcal' : 'g';
-        const metricTitle = isCal ? '熱量' : '蛋白質';
+        const field = currentChartMetric === 'calories' ? 'cal' : 'pro';
 
-        const pastelPalette = {
-            '早餐': { bg: 'rgba(244, 194, 161, 0.90)', border: '#E0AA85' },    
-            '午餐': { bg: 'rgba(168, 213, 186, 0.90)', border: '#8EBFA3' },    
-            '晚餐': { bg: 'rgba(155, 183, 212, 0.90)', border: '#7E9EB8' },    
-            '宵夜': { bg: 'rgba(203, 180, 212, 0.90)', border: '#B394BA' },    
-            '點心/其他': { bg: 'rgba(216, 210, 201, 0.85)', border: '#C2BBB1' } 
+        // 低飽和療癒粉質配色
+        const pastelColors = {
+            '早餐': '#E5C6A0',     // 暖燕麥
+            '午餐': '#8FB096',     // 鼠尾草綠
+            '晚餐': '#B5A89D',     // 暖焙灰棕
+            '宵夜': '#C7B8C9',     // 淡薰衣草灰
+            '點心/其他': '#DCD6CE' // 淺砂岩
         };
 
-        let datasets = [];
+        const datasets = ['早餐', '午餐', '晚餐', '宵夜', '點心/其他'].map(meal => ({
+            label: meal,
+            data: dayList.map(d => d.meals[meal][field]),
+            backgroundColor: pastelColors[meal],
+            borderRadius: 4,
+            borderSkipped: false,
+            stack: 'meals',
+            maxBarThickness: 28
+        }));
 
-        if (currentMealFilter === 'all') {
-            ['早餐', '午餐', '晚餐', '宵夜', '點心/其他'].forEach(meal => {
-                datasets.push({
-                    type: 'bar',
-                    label: meal,
-                    data: dayList.map(d => isCal ? (d.meals[meal]?.cal || 0) : (d.meals[meal]?.pro || 0)),
-                    backgroundColor: pastelPalette[meal].bg,
-                    borderColor: pastelPalette[meal].border,
-                    borderWidth: 1,
-                    stack: 'dailyStack',
-                    borderRadius: 4,
-                    maxBarThickness: 28
-                });
-            });
-        } else {
-            const selectedMeal = currentMealFilter;
-            datasets.push({
-                type: 'bar',
-                label: `${selectedMeal}${metricTitle}`,
-                data: dayList.map(d => isCal ? (d.meals[selectedMeal]?.cal || 0) : (d.meals[selectedMeal]?.pro || 0)),
-                backgroundColor: pastelPalette[selectedMeal]?.bg || 'rgba(168, 213, 186, 0.90)',
-                borderColor: pastelPalette[selectedMeal]?.border || '#8EBFA3',
-                borderWidth: 1,
-                borderRadius: 5,
-                maxBarThickness: 28
-            });
-        }
-
-        const totals = dayList.map(d => {
-            if (currentMealFilter === 'all') {
-                return isCal ? d.totalCal : d.totalPro;
-            } else {
-                return isCal ? (d.meals[currentMealFilter]?.cal || 0) : (d.meals[currentMealFilter]?.pro || 0);
-            }
-        }).filter(v => v > 0);
-
-        const avg = totals.length > 0 ? Math.round(totals.reduce((a, b) => a + b, 0) / totals.length) : 0;
-        document.getElementById('chart-avg-text').textContent = `區間日均：約 ${avg} ${metricUnit}`;
-
-        if (chartInstance) {
-            chartInstance.destroy();
-        }
+        if (chartInstance) chartInstance.destroy();
 
         chartInstance = new Chart(ctx, {
             type: 'bar',
-            data: { labels: labels, datasets: datasets },
+            data: { labels, datasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: {
-                        display: (currentMealFilter === 'all'),
-                        position: 'top',
-                        labels: { boxWidth: 10, font: { size: 10, family: 'PingFang TC' }, padding: 8 }
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 14,
+                            color: '#8A847C',
+                            font: { size: 11 }
+                        }
                     },
                     tooltip: {
-                        backgroundColor: '#2D2B2A',
-                        padding: 8,
+                        backgroundColor: 'rgba(46, 44, 41, 0.92)',
+                        padding: 12,
+                        cornerRadius: 12,
                         titleFont: { size: 12 },
-                        bodyFont: { size: 11 },
+                        bodyFont: { size: 12 },
                         callbacks: {
-                            label: function(context) {
-                                if (context.parsed.y === 0) return null;
-                                return ` ${context.dataset.label}: ${context.parsed.y} ${metricUnit}`;
-                            },
-                            afterBody: function(contexts) {
-                                if (currentMealFilter === 'all') {
-                                    const total = contexts.reduce((sum, item) => sum + item.parsed.y, 0);
-                                    return `──────\n當日總計: ${total} ${metricUnit}`;
-                                }
-                                return '';
+                            footer: (items) => {
+                                const sum = items.reduce((acc, i) => acc + i.parsed.y, 0);
+                                const unit = currentChartMetric === 'calories' ? '大卡' : 'g';
+                                return `當日總計：${sum} ${unit}`;
                             }
                         }
                     }
@@ -848,14 +629,14 @@
                     x: {
                         stacked: true,
                         grid: { display: false },
-                        ticks: { font: { size: 11, family: 'PingFang TC' }, color: '#78716c' }
+                        border: { display: false },
+                        ticks: { color: '#8A847C', font: { size: 11 } }
                     },
                     y: {
                         stacked: true,
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0, 0, 0, 0.04)' },
-                        ticks: { font: { size: 10 }, color: '#78716c' },
-                        title: { display: true, text: metricUnit, font: { size: 10 } }
+                        border: { display: false },
+                        grid: { color: 'rgba(46, 44, 41, 0.04)' },
+                        ticks: { color: '#8A847C', font: { size: 11 } }
                     }
                 }
             }
@@ -863,523 +644,8 @@
     }
 
     // ==========================================
-    // 智慧語意標準化歸納核心 (Smart Food Normalizer)
+    // 體態與儀表板
     // ==========================================
-    function normalizeFoodName(rawTitle) {
-        if (!rawTitle) return '';
-        let t = rawTitle.toLowerCase().trim();
-
-        if (t.includes('跳過') || t.includes('未進食') || t.includes('沒吃')) {
-            return '跳餐 / 未進食';
-        }
-
-        if (t.includes('藍莓') || t.includes('優格') || t.includes('優酪')) {
-            if (t.includes('藍莓') && (t.includes('優格') || t.includes('自製'))) return '自製藍莓優格';
-            if (t.includes('優格')) return '原味/希臘優格';
-            if (t.includes('藍莓')) return '冷凍/新鮮藍莓';
-        }
-
-        if (t.includes('蛋捲酥') || t.includes('蛋捲')) {
-            return '徐家蛋捲酥';
-        }
-
-        if (t.includes('美式') || t.includes('咖啡') || t.includes('nespresso') || t.includes('濃縮')) {
-            if (t.includes('拿鐵') || t.includes('奶')) return '拿鐵咖啡';
-            return '大冰美式 / 黑咖啡';
-        }
-
-        if (t.includes('可頌')) return '可頌 (Costco/鹽可頌)';
-        if (t.includes('軟法') || t.includes('手撕麵包') || t.includes('肉鬆麵包') || t.includes('奶油捲')) {
-            return '超商/烘焙麵包 (軟法/手撕)';
-        }
-
-        if (t.includes('茶葉蛋') || t.includes('溫泉蛋') || t.includes('水煮蛋') || t.includes('滷蛋') || t.includes('煎蛋')) {
-            return '蛋類 (茶葉蛋/水煮蛋/溫泉蛋)';
-        }
-        if (t.includes('地瓜')) return '冰烤地瓜';
-
-        if (t.includes('溫沙拉') || t.includes('舒肥雞') || t.includes('手撕雞') || t.includes('給力盒子') || t.includes('嫩雞')) {
-            return '高蛋白原型雞肉餐盒 / 溫沙拉';
-        }
-        if (t.includes('打拋豬')) return '打拋豬健康餐盒';
-
-        if (t.includes('乾麵') || t.includes('拌麵') || t.includes('米粉') || t.includes('烏龍麵') || t.includes('抄手')) {
-            return '麵攤乾麵 / 湯麵系列';
-        }
-        if (t.includes('鐵板麵')) return '豬排起司鐵板麵';
-        if (t.includes('炒飯') || t.includes('咖哩飯') || t.includes('雞肉飯') || t.includes('蝦仁飯')) {
-            if (t.includes('咖哩')) return '咖哩飯 (白飯減半)';
-            if (t.includes('炒飯')) return '肉絲炒飯 (白飯減半)';
-            return '家常米食便當';
-        }
-
-        if (t.includes('洋芋片')) return '洋芋片 (份量控管)';
-        if (t.includes('蛋塔')) return '肯德基蛋塔';
-        if (t.includes('泡芙')) return '義美小泡芙';
-        if (t.includes('比薩') || t.includes('披薩')) return '比薩 (薄脆/美乃滋)';
-        if (t.includes('炸雞') || t.includes('雞塊') || t.includes('香香雞') || t.includes('鹽酥雞')) {
-            return '炸雞 / 炸物小吃';
-        }
-        if (t.includes('鐵板燒')) return '鐵板燒牛肉 / 蔥蛋';
-        if (t.includes('鍋貼') || t.includes('水餃')) return '鍋貼 / 水餃';
-        if (t.includes('毛豆')) return '原味毛豆莢';
-
-        let cleaned = rawTitle.split('(')[0].split('（')[0].split('+')[0].split('＋')[0].trim();
-        cleaned = cleaned.replace(/[0-9一二三四五六七八九十]+\s*(個|塊|杯|碗|份|片|顆|包|盤|盒)/g, '').trim();
-        return cleaned || rawTitle;
-    }
-
-    // ==========================================
-    // 門診專用摘要計算與彈窗邏輯（14天 / 30天 切換）
-    // ==========================================
-    function setDoctorDays(days) {
-        doctorDaysFilter = days;
-        [14, 30].forEach(d => {
-            const btn = document.getElementById(`doc-btn-${d}`);
-            if (btn) {
-                if (d === days) {
-                    btn.className = "doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-2xs";
-                } else {
-                    btn.className = "doc-tab-btn flex-1 py-1.5 text-xs font-bold rounded-lg transition text-stone-600 hover:text-stone-900";
-                }
-            }
-        });
-        updateDoctorModalContent();
-    }
-
-    function openDoctorModal() {
-        const m = document.getElementById('doctor-modal');
-        updateDoctorModalContent();
-        m.classList.remove('hidden');
-        setTimeout(() => { m.classList.remove('opacity-0'); }, 10);
-    }
-
-    function updateDoctorModalContent() {
-        if (state.scaleData.length > 0) {
-            const latest = state.scaleData[0];
-            document.getElementById('doc-weight').textContent = latest.weight ? latest.weight + ' kg' : '未記錄';
-            document.getElementById('doc-waist').textContent = latest.waist ? latest.waist + ' cm' : '未記錄';
-        } else {
-            document.getElementById('doc-weight').textContent = '未記錄';
-            document.getElementById('doc-waist').textContent = '未記錄';
-        }
-
-        const dailyMap = new Map();
-        const sortedAsc = [...state.entries]
-            .filter(e => e.type === 'meal')
-            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        const mealFoodCounts = {
-            '早餐': {},
-            '午餐': {},
-            '晚餐': {},
-            '宵夜': {}
-        };
-
-        sortedAsc.forEach(e => {
-            const d = new Date(e.timestamp);
-            const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            if (!dailyMap.has(dateKey)) {
-                dailyMap.set(dateKey, { 
-                    totalCal: 0, totalPro: 0, 
-                    bCal: 0, lCal: 0, dCal: 0, nCal: 0,
-                    bPro: 0, lPro: 0, dPro: 0, nPro: 0,
-                    entries: [] 
-                });
-            }
-            const item = dailyMap.get(dateKey);
-            const cal = parseInt(e.calories) || 0;
-            const pro = parseInt(e.protein) || 0;
-            item.totalCal += cal;
-            item.totalPro += pro;
-            item.entries.push(e);
-
-            let cat = '宵夜';
-            if (e.category && e.category.includes('早')) {
-                cat = '早餐';
-                item.bCal += cal;
-                item.bPro += pro;
-            } else if (e.category && e.category.includes('午')) {
-                cat = '午餐';
-                item.lCal += cal;
-                item.lPro += pro;
-            } else if (e.category && e.category.includes('晚')) {
-                cat = '晚餐';
-                item.dCal += cal;
-                item.dPro += pro;
-            } else {
-                item.nCal += cal;
-                item.nPro += pro;
-            }
-        });
-
-        let targetDays = Array.from(dailyMap.entries()).slice(-doctorDaysFilter);
-        
-        if (targetDays.length > 0) {
-            const startD = targetDays[0][0];
-            const endD = targetDays[targetDays.length - 1][0];
-            document.getElementById('doctor-summary-range').textContent = `統計區間：${startD} 至 ${endD}（共 ${targetDays.length} 天紀錄）`;
-
-            let sumCal = 0, sumPro = 0;
-            let sumBCal = 0, sumLCal = 0, sumDCal = 0, sumNCal = 0;
-            let sumBPro = 0, sumLPro = 0, sumDPro = 0, sumNPro = 0;
-            let friedCount = 0;
-            let goodProteinDays = 0;
-
-            targetDays.forEach(([_, day]) => {
-                sumCal += day.totalCal;
-                sumPro += day.totalPro;
-                sumBCal += day.bCal; sumLCal += day.lCal; sumDCal += day.dCal; sumNCal += day.nCal;
-                sumBPro += day.bPro; sumLPro += day.lPro; sumDPro += day.dPro; sumNPro += day.nPro;
-                if (day.totalPro >= 60) goodProteinDays++;
-
-                day.entries.forEach(e => {
-                    const text = (e.title + ' ' + (e.analysis || '')).toLowerCase();
-                    if (text.includes('炸') || text.includes('酥') || text.includes('甜') || text.includes('泡芙') || text.includes('比薩') || text.includes('薯條')) {
-                        friedCount++;
-                    }
-
-                    let cat = '宵夜';
-                    if (e.category && e.category.includes('早')) cat = '早餐';
-                    else if (e.category && e.category.includes('午')) cat = '午餐';
-                    else if (e.category && e.category.includes('晚')) cat = '晚餐';
-
-                    const normalized = normalizeFoodName(e.title);
-                    if (normalized) {
-                        mealFoodCounts[cat][normalized] = (mealFoodCounts[cat][normalized] || 0) + 1;
-                    }
-                });
-            });
-
-            const count = targetDays.length;
-            const avgCal = Math.round(sumCal / count);
-            const avgPro = Math.round(sumPro / count);
-
-            document.getElementById('doc-avg-cal').textContent = `${avgCal} kcal`;
-            document.getElementById('doc-avg-pro').textContent = `${avgPro} g`;
-
-            const totalMealCal = (sumBCal + sumLCal + sumDCal + sumNCal) || 1;
-            const totalMealPro = (sumBPro + sumLPro + sumDPro + sumNPro) || 1;
-
-            const pBCal = Math.round((sumBCal / totalMealCal) * 100);
-            const pLCal = Math.round((sumLCal / totalMealCal) * 100);
-            const pDCal = Math.round((sumDCal / totalMealCal) * 100);
-            const pNCal = Math.round((sumNCal / totalMealCal) * 100);
-
-            const pBPro = Math.round((sumBPro / totalMealPro) * 100);
-            const pLPro = Math.round((sumLPro / totalMealPro) * 100);
-            const pDPro = Math.round((sumDPro / totalMealPro) * 100);
-            const pNPro = Math.round((sumNPro / totalMealPro) * 100);
-
-            document.getElementById('doc-meal-ratios').innerHTML = `
-                <div class="bg-white p-2 rounded-lg border border-stone-200/60">
-                    <p class="text-[11px] text-stone-400">早餐</p>
-                    <p class="text-xs font-bold text-amber-800 mt-0.5">${pBCal}% <span class="text-emerald-700 font-semibold">| ${pBPro}%</span></p>
-                </div>
-                <div class="bg-white p-2 rounded-lg border border-stone-200/60">
-                    <p class="text-[11px] text-stone-400">午餐</p>
-                    <p class="text-xs font-bold text-emerald-800 mt-0.5">${pLCal}% <span class="text-emerald-700 font-semibold">| ${pLPro}%</span></p>
-                </div>
-                <div class="bg-white p-2 rounded-lg border border-stone-200/60">
-                    <p class="text-[11px] text-stone-400">晚餐</p>
-                    <p class="text-xs font-bold text-blue-800 mt-0.5">${pDCal}% <span class="text-emerald-700 font-semibold">| ${pDPro}%</span></p>
-                </div>
-                <div class="bg-white p-2 rounded-lg border border-stone-200/60">
-                    <p class="text-[11px] text-stone-400">宵夜/點心</p>
-                    <p class="text-xs font-bold text-purple-800 mt-0.5">${pNCal}% <span class="text-emerald-700 font-semibold">| ${pNPro}%</span></p>
-                </div>
-            `;
-
-            const mealStyles = {
-                '早餐': { icon: 'ph-coffee', color: 'text-amber-800', note: '以咖啡搭便利澱粉為主，蛋白質偏低，可多補茶葉蛋或豆漿平衡。' },
-                '午餐': { icon: 'ph-bowl-food', color: 'text-emerald-800', note: '優質蛋白質主力，多以高纖舒肥雞、手撕雞餐盒為主，偶吃麵食。' },
-                '晚餐': { icon: 'ph-cooking-pot', color: 'text-blue-800', note: '家庭外食為主，有落實白飯減半與菜肉優先，避免過多碳水昏睡。' },
-                '宵夜': { icon: 'ph-moon', color: 'text-purple-800', note: '已多轉為無糖優格搭配水果，大幅取代油炸點心，降低肝臟負擔。' }
-            };
-
-            let foodStructureHtml = '';
-            ['早餐', '午餐', '晚餐', '宵夜'].forEach(mKey => {
-                const sortList = Object.entries(mealFoodCounts[mKey])
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 8);
-
-                let itemsBadge = sortList.map(([title, c]) => `
-                    <span class="inline-flex items-center gap-1 bg-white border border-stone-200 px-2 py-0.5 rounded-md text-[11px] text-stone-700">
-                        ${title} <span class="text-emerald-700 font-bold text-[10px]">(${c}次)</span>
-                    </span>
-                `).join('');
-
-                if (!itemsBadge) itemsBadge = '<span class="text-stone-400 text-[11px]">暫無此餐別紀錄</span>';
-
-                foodStructureHtml += `
-                <div class="bg-stone-100/60 p-2.5 rounded-xl border border-stone-200/60">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="font-bold ${mealStyles[mKey].color} flex items-center gap-1">
-                            <i class="ph ${mealStyles[mKey].icon}"></i> ${mKey}
-                        </span>
-                    </div>
-                    <div class="flex flex-wrap gap-1 mb-1.5">
-                        ${itemsBadge}
-                    </div>
-                    <p class="text-[11px] text-stone-500 leading-tight">
-                        <span class="font-semibold text-stone-600">型態：</span>${mealStyles[mKey].note}
-                    </p>
-                </div>`;
-            });
-
-            document.getElementById('doc-food-structures').innerHTML = foodStructureHtml;
-
-            document.getElementById('doc-insights-list').innerHTML = `
-                <li><span class="font-bold text-stone-800">蛋白質保肌防線：</span>最近 ${count} 天中，有 <span class="font-bold text-emerald-700">${goodProteinDays} 天</span> 蛋白質攝取達 60g 以上基準。</li>
-                <li><span class="font-bold text-stone-800">油脂與甜食頻率：</span>累計偵測到約 <span class="font-bold text-amber-800">${friedCount} 次</span> 高油炸物或高糖點心攝取。</li>
-                <li><span class="font-bold text-stone-800">用藥與腸胃適應：</span>晚餐若碳水份量較高易引起昏睡嗜睡，宵夜已多轉向高蛋白優格替代。</li>
-            `;
-            
-            document.getElementById('doc-talk-guide').textContent = `「醫師好，這是我近 ${count} 天的總結：每日蛋白質平均維持在約 ${avgPro} 克；打藥後前 1~2 天食慾較低，偶爾晚餐澱粉較多會容易脹氣嗜睡，宵夜已多轉為無糖優格，您看目前的代謝走向與劑量是否需微調？」`;
-        } else {
-            document.getElementById('doctor-summary-range').textContent = '尚無足夠飲食天數資料進行統計';
-        }
-    }
-
-    // ==========================================
-    // 日期搜尋過濾邏輯
-    // ==========================================
-    function handleDateSearch(dateVal) {
-        if (!dateVal) {
-            clearDateSearch();
-            return;
-        }
-        selectedSearchDate = dateVal;
-        document.getElementById('clear-search-btn').classList.remove('hidden');
-        document.getElementById('search-banner').classList.remove('hidden');
-        
-        const d = new Date(dateVal);
-        document.getElementById('search-banner-text').textContent = `正在檢視：${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 的完整紀錄`;
-        renderTimeline();
-    }
-
-    function clearDateSearch() {
-        selectedSearchDate = null;
-        document.getElementById('search-date-input').value = '';
-        document.getElementById('clear-search-btn').classList.add('hidden');
-        document.getElementById('search-banner').classList.add('hidden');
-        visibleDaysCount = 14; 
-        renderTimeline();
-    }
-
-    // ==========================================
-    // Lazy Loading
-    // ==========================================
-    function setupLazyLoading() {
-        const sentinel = document.getElementById('loading-sentinel');
-        if (!sentinel) return;
-
-        observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !selectedSearchDate) {
-                const allDaysCount = getUniqueDaysList().length;
-                if (visibleDaysCount < allDaysCount) {
-                    visibleDaysCount += DAYS_INCREMENT;
-                    renderTimeline();
-                }
-            }
-        }, { rootMargin: '200px' });
-
-        observer.observe(sentinel);
-    }
-
-    function getUniqueDaysList() {
-        const set = new Set();
-        state.entries.forEach(e => {
-            const d = new Date(e.timestamp);
-            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            set.add(key);
-        });
-        return Array.from(set).sort().reverse();
-    }
-
-    // ==========================================
-    // 時間軸渲染
-    // ==========================================
-    function renderTimeline() {
-        const container = document.getElementById('timeline-container');
-        const sentinel = document.getElementById('loading-sentinel');
-        let sortedEntries = [...state.entries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-        if (sortedEntries.length === 0) {
-            container.innerHTML = `<div class="text-center py-16 text-stone-400 text-base font-medium"><i class="ph ph-notebook text-4xl mb-3 text-stone-300"></i><p>手帳尚無內容，可透過 LINE 傳送或手動新增。</p></div>`;
-            if (sentinel) sentinel.textContent = '';
-            return;
-        }
-
-        if (selectedSearchDate) {
-            sortedEntries = sortedEntries.filter(e => {
-                const d = new Date(e.timestamp);
-                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                return key === selectedSearchDate;
-            });
-
-            if (sortedEntries.length === 0) {
-                container.innerHTML = `<div class="text-center py-16 text-stone-400 text-base font-medium"><i class="ph ph-calendar-x text-4xl mb-3 text-stone-300"></i><p>該日（${selectedSearchDate}）沒有任何飲食紀錄。</p></div>`;
-                if (sentinel) sentinel.textContent = '';
-                return;
-            }
-        } else {
-            const allDays = getUniqueDaysList();
-            const allowedDays = new Set(allDays.slice(0, visibleDaysCount));
-            sortedEntries = sortedEntries.filter(e => {
-                const d = new Date(e.timestamp);
-                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                return allowedDays.has(key);
-            });
-
-            if (sentinel) {
-                if (visibleDaysCount < allDays.length) {
-                    sentinel.textContent = '往下滑動載入更早紀錄...';
-                } else {
-                    sentinel.textContent = '已顯示全部歷史紀錄';
-                }
-            }
-        }
-
-        function getWeekKey(date) {
-            const d = new Date(date);
-            d.setHours(0, 0, 0, 0);
-            const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            return new Date(d.setDate(diff)).getTime();
-        }
-
-        const weeks = new Map();
-
-        sortedEntries.forEach((entry, index) => {
-            const entryDate = new Date(entry.timestamp);
-            const weekKey = getWeekKey(entryDate);
-            const dateStr = entryDate.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
-            
-            if (!weeks.has(weekKey)) {
-                weeks.set(weekKey, { totalCals: 0, totalProtein: 0, days: new Map(), start: weekKey });
-            }
-            
-            const weekObj = weeks.get(weekKey);
-            if (!weekObj.days.has(dateStr)) {
-                weekObj.days.set(dateStr, { cals: 0, protein: 0, entries: [] });
-            }
-            
-            const dayObj = weekObj.days.get(dateStr);
-            dayObj.entries.push({ entry, index }); 
-            
-            if (entry.type === 'meal') {
-                const cals = parseInt(entry.calories) || 0;
-                const prot = parseInt(entry.protein) || 0;
-                weekObj.totalCals += cals;
-                weekObj.totalProtein += prot;
-                dayObj.cals += cals;
-                dayObj.protein += prot;
-            }
-        });
-
-        let htmlContent = '';
-
-        Array.from(weeks.values()).sort((a, b) => b.start - a.start).forEach(week => {
-            const startDate = new Date(week.start);
-            const endDate = new Date(week.start);
-            endDate.setDate(endDate.getDate() + 6);
-            const weekLabel = `${startDate.getMonth()+1}/${startDate.getDate()} - ${endDate.getMonth()+1}/${endDate.getDate()}`;
-            
-            if (!selectedSearchDate) {
-                htmlContent += `
-                <div class="mb-6 p-5 bg-stone-50 rounded-xl border border-stone-200/80 text-stone-700">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-sm font-bold text-stone-500 flex items-center gap-2">
-                            <i class="ph ph-calendar text-base"></i> 當週小結
-                        </span>
-                        <span class="text-sm text-stone-400 font-medium">${weekLabel}</span>
-                    </div>
-                    <div class="flex gap-8 mt-2">
-                        <div>
-                            <span class="text-xs text-stone-400">總攝取：</span>
-                            <span class="text-base font-bold text-stone-800">${week.totalCals} 大卡</span>
-                        </div>
-                        <div>
-                            <span class="text-xs text-stone-400">總蛋白質：</span>
-                            <span class="text-base font-bold text-stone-800">${week.totalProtein} 克</span>
-                        </div>
-                    </div>
-                </div>`;
-            }
-            
-            Array.from(week.days.entries()).forEach(([dateStr, day]) => {
-                htmlContent += `
-                <div class="flex justify-between items-center pt-4 pb-2 mb-3 border-b border-stone-100">
-                    <span class="text-sm font-bold text-stone-600 bg-stone-100 px-3 py-1.5 rounded-md">${dateStr}</span>
-                    <div class="flex gap-4 text-sm text-stone-500 font-medium">
-                        <span>${day.cals} 大卡</span>
-                        <span>${day.protein}g 蛋白質</span>
-                    </div>
-                </div>`;
-                
-                day.entries.forEach(({ entry }) => {
-                    const timeString = new Date(entry.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-                    
-                    if (entry.type === 'water') {
-                        htmlContent += `
-                        <div class="flex items-center gap-3 p-4 bg-white border border-stone-100 rounded-xl shadow-xs mb-3 group relative pr-12">
-                            <div class="w-10 h-10 rounded-lg bg-stone-50 flex items-center justify-center text-amber-700">
-                                <i class="ph ph-drop text-xl"></i>
-                            </div>
-                            <div class="flex-1 flex justify-between items-center">
-                                <span class="text-sm font-medium text-stone-700">補充水分</span>
-                                <span class="text-sm font-bold text-stone-600">+${entry.amount} ml</span>
-                            </div>
-                            <button onclick="deleteEntry('${entry.id}')" class="absolute right-3 top-1/2 -translate-y-1/2 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-md p-1.5 transition-colors">
-                                <i class="ph ph-trash text-lg"></i>
-                            </button>
-                        </div>`;
-                    } else {
-                        const contextHtml = entry.context ? `<span class="text-xs bg-stone-100 text-stone-600 px-2.5 py-1 rounded-md mr-2 font-normal">${entry.context}</span>` : '';
-                        
-                        let nutritionHtml = '';
-                        if (entry.calories > 0 || entry.protein > 0) {
-                            nutritionHtml = `<div class="text-sm text-stone-500 mt-2 space-x-3">`;
-                            if (entry.calories > 0) nutritionHtml += `<span>約 ${entry.calories} 大卡</span>`;
-                            if (entry.protein > 0) nutritionHtml += `<span>• 蛋白質 ${entry.protein}g</span>`;
-                            nutritionHtml += `</div>`;
-                        }
-                        
-                        let notesHtml = '';
-                        if (entry.analysis || entry.advice) {
-                            notesHtml = `<div class="mt-4 p-4 bg-stone-50/80 rounded-xl text-sm space-y-2 border border-stone-100/60 leading-relaxed text-stone-600">`;
-                            if (entry.analysis) notesHtml += `<p><span class="font-bold text-stone-700">💡 營養觀察：</span>${entry.analysis}</p>`;
-                            if (entry.advice) notesHtml += `<p><span class="font-bold text-stone-700">🥗 微調建議：</span>${entry.advice}</p>`;
-                            notesHtml += `</div>`;
-                        }
-
-                        htmlContent += `
-                        <div class="p-5 bg-white border border-stone-200 rounded-xl shadow-xs mb-4 relative transition hover:border-stone-300">
-                            <div class="flex justify-between items-start mb-2 pr-8">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-sm font-bold text-stone-700 bg-stone-100 px-2.5 py-1 rounded-md">${entry.category}</span>
-                                    <span class="text-sm text-stone-400">${timeString}</span>
-                                </div>
-                            </div>
-                            
-                            <button onclick="deleteEntry('${entry.id}')" class="absolute right-4 top-4 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg p-1.5 transition-colors" title="刪除紀錄">
-                                <i class="ph ph-trash text-lg"></i>
-                            </button>
-
-                            <h3 class="text-base font-bold text-stone-800 mt-2">${entry.title}</h3>
-                            <div class="mt-2">${contextHtml}</div>
-                            ${nutritionHtml}
-                            ${notesHtml}
-                        </div>`;
-                    }
-                });
-            });
-        });
-        
-        container.innerHTML = htmlContent;
-    }
-
     function openScaleModal() {
         const m = document.getElementById('scale-modal');
         if (state.scaleData.length > 0) {
@@ -1393,7 +659,7 @@
             document.getElementById('input-waist').value = '';
         }
         m.classList.remove('hidden');
-        setTimeout(() => { m.classList.remove('opacity-0'); }, 10);
+        setTimeout(() => m.classList.remove('opacity-0'), 10);
     }
 
     function saveScaleData() {
@@ -1415,39 +681,375 @@
         };
 
         const todayIndex = state.scaleData.findIndex(e => e.date === newScaleEntry.date);
-        if (todayIndex !== -1) {
-            state.scaleData[todayIndex] = newScaleEntry;
-        } else {
-            state.scaleData.unshift(newScaleEntry);
-        }
+        if (todayIndex !== -1) state.scaleData[todayIndex] = newScaleEntry;
+        else state.scaleData.unshift(newScaleEntry);
 
         localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
         closeModal('scale-modal');
         renderScaleData();
+        showToast('已更新最新體態');
     }
 
     function renderScaleData() {
         if (state.scaleData.length === 0) return;
         const latest = state.scaleData[0];
-        document.getElementById('display-weight').textContent = latest.weight ? latest.weight + ' kg' : '-';
-        document.getElementById('display-fat').textContent = latest.fat ? latest.fat + ' %' : '-';
-        document.getElementById('display-waist').textContent = latest.waist ? latest.waist + ' cm' : '-';
+        document.getElementById('display-weight').textContent = latest.weight ? `${latest.weight} kg` : '-';
+        document.getElementById('display-fat').textContent = latest.fat ? `${latest.fat} %` : '-';
+        document.getElementById('display-waist').textContent = latest.waist ? `${latest.waist} cm` : '-';
         const dateObj = new Date(latest.date);
-        document.getElementById('scale-date').textContent = `最後記錄：${dateObj.getMonth()+1}/${dateObj.getDate()}`;
+        document.getElementById('scale-date').innerHTML = `${dateObj.getMonth() + 1}/${dateObj.getDate()} 紀錄 <i class="ph ph-caret-right text-[11px]"></i>`;
+    }
+
+    function renderDashboard() {
+        const today = new Date().toDateString();
+        const todayEntries = state.entries.filter(e => new Date(e.timestamp).toDateString() === today);
+        let totalWater = 0, totalCals = 0, totalProtein = 0;
+
+        todayEntries.forEach(e => {
+            if (e.type === 'water') totalWater += (e.amount || 0);
+            if (e.type === 'meal') {
+                totalCals += (e.calories || 0);
+                totalProtein += (e.protein || 0);
+            }
+        });
+
+        document.getElementById('total-cals').textContent = totalCals;
+        document.getElementById('total-protein').textContent = totalProtein;
+
+        // 蛋白質進度條
+        const proteinPct = Math.min((totalProtein / DAILY_PROTEIN_GOAL) * 100, 100);
+        document.getElementById('protein-bar').style.width = `${proteinPct}%`;
+        const remainPro = DAILY_PROTEIN_GOAL - totalProtein;
+        document.getElementById('protein-status').textContent = remainPro > 0
+            ? `還差 ${remainPro}g（目標 ${DAILY_PROTEIN_GOAL}g）`
+            : `今日已達標（${totalProtein}g）`;
+
+        // 水分進度條
+        document.getElementById('water-text').textContent = `${totalWater} / ${DAILY_WATER_GOAL} ml`;
+        const waterPct = Math.min((totalWater / DAILY_WATER_GOAL) * 100, 100);
+        document.getElementById('water-bar').style.width = `${waterPct}%`;
+    }
+
+    // ==========================================
+    // 時間軸篩選、日期快搜與卡片展開
+    // ==========================================
+    function setTimelineFilter(cat) {
+        currentTimelineFilter = cat;
+        document.querySelectorAll('.tl-pill').forEach(btn => {
+            if (btn.dataset.cat === cat) {
+                btn.className = 'tl-pill shrink-0 text-xs font-medium px-4 py-1.5 rounded-full bg-ink text-paper transition';
+            } else {
+                btn.className = 'tl-pill shrink-0 text-xs font-medium px-4 py-1.5 rounded-full bg-paper text-muted hover:text-ink transition';
+            }
+        });
+        renderTimeline();
+    }
+
+    function handleDateSearch(dateVal) {
+        selectedSearchDate = dateVal;
+        const clearBtn = document.getElementById('clear-date-btn');
+        if (dateVal) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+        renderTimeline();
+    }
+
+    function clearDateSearch() {
+        selectedSearchDate = '';
+        document.getElementById('date-search-input').value = '';
+        document.getElementById('clear-date-btn').classList.add('hidden');
+        renderTimeline();
+    }
+
+    function loadMoreDays() {
+        visibleDaysLimit += 14;
+        renderTimeline();
+    }
+
+    function toggleNote(id) {
+        const drawer = document.getElementById(`note-drawer-${id}`);
+        const chevron = document.getElementById(`note-chevron-${id}`);
+        if (!drawer) return;
+        drawer.classList.toggle('open');
+        if (chevron) chevron.classList.toggle('rotated');
+    }
+
+    function getCategoryStyle(category) {
+        if (!category) return 'bg-paper text-muted';
+        if (category.includes('早')) return 'bg-oat text-[#8B6A44]';
+        if (category.includes('午')) return 'bg-sage-soft text-sage';
+        if (category.includes('晚')) return 'bg-stone-100 text-stone-600';
+        if (category.includes('宵夜') || category.includes('夜')) return 'bg-[#F2EEF3] text-[#7A6A7E]';
+        return 'bg-paper text-muted';
+    }
+
+    function renderTimeline() {
+        const container = document.getElementById('timeline-container');
+        const loadMoreWrapper = document.getElementById('load-more-wrapper');
+
+        let filtered = [...state.entries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        if (selectedSearchDate) {
+            filtered = filtered.filter(e => {
+                const d = new Date(e.timestamp);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                return key === selectedSearchDate;
+            });
+        }
+
+        if (currentTimelineFilter !== 'all') {
+            filtered = filtered.filter(e => e.type === 'meal' && e.category && e.category.includes(currentTimelineFilter.replace('餐', '')));
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-14 text-muted text-sm">
+                    <i class="ph ph-notebook text-3xl mb-2 block text-stone-300"></i>
+                    <p>${selectedSearchDate ? '這天沒有符合的飲食紀錄' : '目前還沒有紀錄，點下方按鈕就能輕鬆記一餐'}</p>
+                </div>`;
+            loadMoreWrapper.classList.add('hidden');
+            return;
+        }
+
+        // 依日期分組
+        const daysMap = new Map();
+        filtered.forEach(entry => {
+            const d = new Date(entry.timestamp);
+            const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const dateLabel = d.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
+
+            if (!daysMap.has(dateKey)) {
+                daysMap.set(dateKey, { label: dateLabel, cals: 0, protein: 0, entries: [] });
+            }
+            const dayObj = daysMap.get(dateKey);
+            dayObj.entries.push(entry);
+            if (entry.type === 'meal') {
+                dayObj.cals += parseInt(entry.calories) || 0;
+                dayObj.protein += parseInt(entry.protein) || 0;
+            }
+        });
+
+        const allDays = Array.from(daysMap.values());
+        const showDays = selectedSearchDate ? allDays : allDays.slice(0, visibleDaysLimit);
+
+        if (!selectedSearchDate && allDays.length > visibleDaysLimit) {
+            loadMoreWrapper.classList.remove('hidden');
+        } else {
+            loadMoreWrapper.classList.add('hidden');
+        }
+
+        let html = '';
+
+        showDays.forEach(day => {
+            html += `
+            <div>
+                <div class="flex justify-between items-center pb-2.5 mb-3 border-b border-stone-100">
+                    <span class="text-xs font-semibold text-ink/70">${day.label}</span>
+                    <div class="flex gap-3 text-xs text-muted">
+                        <span>${day.cals} 大卡</span>
+                        <span class="text-sage font-medium">${day.protein}g 蛋白</span>
+                    </div>
+                </div>
+                <div class="space-y-3">`;
+
+            day.entries.forEach(entry => {
+                const timeStr = new Date(entry.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
+                if (entry.type === 'water') {
+                    html += `
+                    <div class="flex items-center justify-between px-4 py-3 bg-paper/80 rounded-2xl">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-oat flex items-center justify-center text-oat-dark">
+                                <i class="ph-fill ph-drop text-sm"></i>
+                            </span>
+                            <div>
+                                <span class="text-sm font-medium text-ink">補充水分</span>
+                                <span class="text-xs text-muted ml-2">${timeStr}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-semibold text-oat-dark">+${entry.amount} ml</span>
+                            <button onclick="deleteEntry('${entry.id}')" class="text-stone-300 hover:text-rose-400 p-1 transition" title="刪除">
+                                <i class="ph ph-trash text-base"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                } else {
+                    const hasNotes = Boolean(entry.analysis || entry.advice);
+                    const catStyle = getCategoryStyle(entry.category);
+                    const safeId = entry.id.replace(/[^a-zA-Z0-9_-]/g, '');
+
+                    html += `
+                    <article class="p-4 sm:p-5 bg-paper/70 hover:bg-paper rounded-2xl transition">
+                        <div class="flex justify-between items-start gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full ${catStyle}">${entry.category}</span>
+                                <span class="text-xs text-muted">${timeStr}</span>
+                                ${entry.context ? `<span class="text-[11px] text-muted bg-surface px-2 py-0.5 rounded-full">${entry.context}</span>` : ''}
+                            </div>
+                            <button onclick="deleteEntry('${entry.id}')" class="text-stone-300 hover:text-rose-400 p-1 -mr-1 transition shrink-0" title="刪除紀錄">
+                                <i class="ph ph-trash text-base"></i>
+                            </button>
+                        </div>
+
+                        <h3 class="text-[15px] font-bold text-ink mt-2.5 leading-snug">${entry.title}</h3>
+
+                        ${(entry.calories > 0 || entry.protein > 0) ? `
+                        <div class="flex items-center gap-3 text-xs text-muted mt-2">
+                            ${entry.calories > 0 ? `<span>約 ${entry.calories} 大卡</span>` : ''}
+                            ${entry.protein > 0 ? `<span class="text-sage font-medium">蛋白質 ${entry.protein}g</span>` : ''}
+                        </div>` : ''}
+
+                        ${hasNotes ? `
+                        <button onclick="toggleNote('${safeId}')" class="mt-3 pt-2.5 border-t border-stone-200/50 w-full flex items-center justify-between text-xs text-muted hover:text-ink transition">
+                            <span class="flex items-center gap-1.5">
+                                <i class="ph ph-sparkle text-sage"></i> 查看營養筆記
+                            </span>
+                            <i id="note-chevron-${safeId}" class="ph ph-caret-down chevron-icon"></i>
+                        </button>
+                        <div id="note-drawer-${safeId}" class="note-drawer">
+                            <div>
+                                <div class="mt-3 p-4 bg-surface rounded-2xl text-xs space-y-2 leading-relaxed text-ink/80">
+                                    ${entry.analysis ? `<p><span class="font-semibold text-ink">營養觀察：</span>${entry.analysis}</p>` : ''}
+                                    ${entry.advice ? `<p><span class="font-semibold text-sage">微調建議：</span>${entry.advice}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>` : ''}
+                    </article>`;
+                }
+            });
+
+            html += `</div></div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ==========================================
+    // 新增、刪除、匯入與備份
+    // ==========================================
+    function addWater() {
+        const entry = {
+            id: 'water_' + Date.now(),
+            type: 'water',
+            title: '喝水',
+            amount: 250,
+            timestamp: new Date().toISOString()
+        };
+        state.entries.unshift(entry);
+        saveData();
+        renderDashboard();
+        renderTimeline();
+        showToast('已喝水 +250ml');
+    }
+
+    function selectModalCategory(cat) {
+        document.getElementById('entry-type').value = cat;
+        document.getElementById('modal-title').textContent = `記錄${cat}`;
+        document.querySelectorAll('.mcat-btn').forEach(btn => {
+            if (btn.dataset.mcat === cat) {
+                btn.className = 'mcat-btn text-xs px-3 py-1.5 rounded-full bg-ink text-paper font-medium transition';
+            } else {
+                btn.className = 'mcat-btn text-xs px-3 py-1.5 rounded-full bg-paper text-muted transition';
+            }
+        });
+    }
+
+    function openModal(type, category) {
+        selectModalCategory(category || '午餐');
+        document.getElementById('entry-content').value = '';
+        document.getElementById('entry-context').value = '';
+        document.getElementById('entry-cals').value = '';
+        document.getElementById('entry-protein').value = '';
+        const m = document.getElementById('entry-modal');
+        m.classList.remove('hidden');
+        setTimeout(() => {
+            m.classList.remove('opacity-0');
+            document.getElementById('entry-content').focus();
+        }, 10);
+    }
+
+    async function saveEntry() {
+        const category = document.getElementById('entry-type').value || '午餐';
+        const content = document.getElementById('entry-content').value.trim();
+        const context = document.getElementById('entry-context').value.trim();
+        const cals = parseInt(document.getElementById('entry-cals').value) || 0;
+        const protein = parseInt(document.getElementById('entry-protein').value) || 0;
+
+        if (!content) {
+            showToast('請輸入餐點內容', true);
+            return;
+        }
+
+        const now = new Date();
+        const entry = {
+            id: 'meal_' + Date.now(),
+            type: 'meal',
+            category,
+            title: content,
+            context,
+            calories: cals,
+            protein,
+            analysis: '',
+            advice: '',
+            timestamp: now.toISOString()
+        };
+
+        state.entries.unshift(entry);
+        saveData();
+        closeModal('entry-modal');
+        renderDashboard();
+        renderTimeline();
+        renderChart();
+        showToast(`已記錄${category}`);
+
+        // 同步寫入雲端
+        try {
+            await db.collection('diet_records').doc(entry.id).set({
+                type: entry.category,
+                title: entry.title,
+                context: entry.context,
+                calories: entry.calories,
+                protein: entry.protein,
+                analysis: '',
+                advice: '',
+                createdAt: firebase.firestore.Timestamp.fromDate(now)
+            });
+        } catch (err) {
+            console.error("雲端寫入失敗:", err);
+        }
+    }
+
+    async function deleteEntry(id) {
+        if (!confirm('要移除這筆紀錄嗎？')) return;
+        state.entries = state.entries.filter(e => e.id !== id);
+        saveData();
+        renderDashboard();
+        renderTimeline();
+        renderChart();
+        showToast('已移除紀錄');
+
+        try {
+            await db.collection('diet_records').doc(id).delete();
+        } catch (error) {
+            console.error("雲端刪除失敗:", error);
+        }
     }
 
     function openDataModal() {
         const m = document.getElementById('data-modal');
         m.classList.remove('hidden');
-        setTimeout(() => { m.classList.remove('opacity-0'); }, 10);
+        setTimeout(() => m.classList.remove('opacity-0'), 10);
     }
 
     async function handleTextImport() {
         const text = document.getElementById('import-text').value;
-        if (!text.trim()) { alert('請先貼上資料。'); return; }
-        
+        if (!text.trim()) {
+            showToast('請先貼上表格內容', true);
+            return;
+        }
+
         const batch = db.batch();
-        let addedCount = 0; 
+        let addedCount = 0;
         let updatedCount = 0;
         const lines = text.split('\n');
 
@@ -1455,7 +1057,7 @@
             let cleanLine = line.trim();
             if (cleanLine.startsWith('|')) cleanLine = cleanLine.substring(1);
             if (cleanLine.endsWith('|')) cleanLine = cleanLine.substring(0, cleanLine.length - 1);
-            
+
             let row = [];
             if (cleanLine.includes('|')) {
                 row = cleanLine.split('|').map(s => s.trim());
@@ -1464,23 +1066,25 @@
                 if (parsed.data && parsed.data.length > 0) row = parsed.data[0].map(s => s.trim());
             }
 
-            if (row.length < 3) return; 
+            if (row.length < 3) return;
 
             const dateMatch = row[0].match(/(\d{4}\/\d{2}\/\d{2})/);
             if (dateMatch) {
                 const dateStr = dateMatch[1].replace(/\//g, '-');
                 const fullDateString = row[0];
-                let category = '點心/其他'; let timeStr = '15:00';
-                
+                let category = '點心/其他';
+                let timeStr = '15:00';
+
                 if (fullDateString.includes('早')) { category = '早餐'; timeStr = '08:00'; }
                 else if (fullDateString.includes('午餐')) { category = '午餐'; timeStr = '12:30'; }
                 else if (fullDateString.includes('晚餐')) { category = '晚餐'; timeStr = '19:00'; }
                 else if (fullDateString.includes('宵夜')) { category = '宵夜'; timeStr = '23:00'; }
-                
+
                 const timestamp = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+                const context = row[1] || '';
                 const content = row[2] || '未紀錄內容';
                 let calories = 0, protein = 0, analysis = '', advice = '';
-                
+
                 if (row.length >= 7 && !isNaN(parseInt(row[3]))) {
                     calories = parseInt(row[3]) || 0;
                     protein = parseInt(row[4]) || 0;
@@ -1490,22 +1094,24 @@
                     analysis = row[3] || '';
                     advice = row[4] || '';
                 }
-                
+
                 const newEntry = {
                     id: 'import_' + Date.now() + Math.random().toString(36).substring(7),
                     type: content.includes('水') && !content.includes('餃') && !content.includes('果') ? 'water' : 'meal',
-                    category: category, 
-                    title: content, 
-                    calories: calories,
-                    protein: protein,
-                    analysis: analysis, 
-                    advice: advice, 
-                    timestamp: timestamp
+                    category,
+                    title: content,
+                    context,
+                    calories,
+                    protein,
+                    analysis,
+                    advice,
+                    timestamp
                 };
 
                 const firebaseData = {
                     type: newEntry.category,
                     title: newEntry.title,
+                    context: newEntry.context,
                     calories: newEntry.calories,
                     protein: newEntry.protein,
                     analysis: newEntry.analysis,
@@ -1517,48 +1123,48 @@
 
                 if (existingIndex !== -1 && newEntry.type === 'meal') {
                     newEntry.id = state.entries[existingIndex].id;
-                    state.entries[existingIndex] = newEntry; 
-                    const docRef = db.collection('diet_records').doc(newEntry.id);
-                    batch.set(docRef, firebaseData, { merge: true });
+                    state.entries[existingIndex] = newEntry;
+                    batch.set(db.collection('diet_records').doc(newEntry.id), firebaseData, { merge: true });
                     updatedCount++;
                 } else {
-                    const docRef = db.collection('diet_records').doc(newEntry.id);
-                    batch.set(docRef, firebaseData);
-                    state.entries.push(newEntry); 
+                    batch.set(db.collection('diet_records').doc(newEntry.id), firebaseData);
+                    state.entries.push(newEntry);
                     addedCount++;
                 }
             }
         });
-        
+
         if (addedCount > 0 || updatedCount > 0) {
             try {
-                document.getElementById('import-text').value = '手帳更新中...';
+                document.getElementById('import-text').value = '';
                 await batch.commit();
                 saveData();
-                alert(`同步完成！\n新增：${addedCount} 筆\n更新：${updatedCount} 筆`);
-                location.reload();
+                closeModal('data-modal');
+                renderDashboard();
+                renderTimeline();
+                renderChart();
+                showToast(`同步完成（新增 ${addedCount}、更新 ${updatedCount}）`);
             } catch (error) {
                 console.error("寫入失敗:", error);
-                alert("同步失敗，請確認網路連線。");
+                showToast('同步失敗，請檢查網路', true);
             }
         } else {
-            alert('未讀取到有效的表格格式。');
+            showToast('未讀取到有效的表格格式', true);
         }
     }
 
     function exportData() {
         const backupData = { meals: state.entries, scale: state.scaleData };
-        const dataStr = JSON.stringify(backupData, null, 2); 
-        const blob = new Blob([dataStr], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const exportFileDefaultName = `diet_journal_${new Date().toISOString().split('T')[0]}.json`;
-        let linkElement = document.createElement('a');
-        linkElement.setAttribute('href', url);
-        linkElement.setAttribute('download', exportFileDefaultName);
-        document.body.appendChild(linkElement); 
-        linkElement.click();
-        document.body.removeChild(linkElement);
-        URL.revokeObjectURL(url); 
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `diet_journal_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast('已匯出備份檔案');
     }
 
     function handleJSONImport(event) {
@@ -1568,7 +1174,7 @@
         reader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                if(importedData.meals) {
+                if (importedData.meals) {
                     state.entries = importedData.meals;
                     state.scaleData = importedData.scale || [];
                 } else if (Array.isArray(importedData)) {
@@ -1576,112 +1182,49 @@
                 }
                 saveData();
                 localStorage.setItem('scale_entries_v2', JSON.stringify(state.scaleData));
-                alert('手帳資料已成功還原！');
-                location.reload();
-            } catch (err) { alert('檔案格式不正確。'); }
+                closeModal('data-modal');
+                renderDashboard();
+                renderScaleData();
+                renderTimeline();
+                renderChart();
+                showToast('備份資料已還原');
+            } catch (err) {
+                showToast('檔案格式不正確', true);
+            }
         };
         reader.readAsText(file);
     }
 
     function clearAllData() {
-        if(confirm('確定要清空所有的手帳紀錄嗎？此操作無法還原。')) {
-            state.entries = []; state.scaleData = [];
-            saveData(); localStorage.removeItem('scale_entries_v2');
-            location.reload();
+        if (confirm('確定要清空所有的手帳紀錄嗎？此操作無法還原。')) {
+            state.entries = [];
+            state.scaleData = [];
+            saveData();
+            localStorage.removeItem('scale_entries_v2');
+            closeModal('data-modal');
+            renderDashboard();
+            renderScaleData();
+            renderTimeline();
+            renderChart();
+            showToast('已清空歷史紀錄');
         }
     }
 
-    function addWater() {
-        const entry = { id: Date.now().toString(), type: 'water', title: '喝水', amount: 250, timestamp: new Date().toISOString() };
-        state.entries.unshift(entry); saveData(); renderDashboard(); renderTimeline();
-    }
-
-    function saveEntry() {
-        const type = document.getElementById('entry-type').value;
-        const content = document.getElementById('entry-content').value;
-        const context = document.getElementById('entry-context').value;
-        const cals = parseInt(document.getElementById('entry-cals').value) || 0;
-        const protein = parseInt(document.getElementById('entry-protein').value) || 0;
-        
-        if (!content) return;
-        
-        const entry = { 
-            id: Date.now().toString(), 
-            type: 'meal', 
-            category: type, 
-            title: content, 
-            context: context, 
-            calories: cals,
-            protein: protein,
-            timestamp: new Date().toISOString() 
-        };
-        state.entries.unshift(entry); 
-        saveData(); 
-        closeModal('entry-modal'); 
-        renderDashboard(); 
-        renderTimeline();
-        renderChart();
-    }
-
-    async function deleteEntry(id) {
-        if(confirm('要從手帳中移除這筆紀錄嗎？')) {
-            try {
-                await db.collection('diet_records').doc(id).delete();
-                state.entries = state.entries.filter(e => e.id !== id);
-                saveData(); 
-                renderDashboard(); 
-                renderTimeline();
-                renderChart();
-            } catch (error) {
-                console.error("刪除失敗:", error);
-            }
-        }
-    }
-
-    function saveData() { localStorage.setItem('diet_entries_v4', JSON.stringify(state.entries)); }
-
-    function renderDashboard() {
-        const today = new Date().toDateString();
-        const todayEntries = state.entries.filter(e => new Date(e.timestamp).toDateString() === today);
-        let totalWater = 0; let totalCals = 0; let totalProtein = 0;
-        
-        todayEntries.forEach(e => { 
-            if (e.type === 'water') totalWater += (e.amount || 0); 
-            if (e.type === 'meal') {
-                totalCals += (e.calories || 0);
-                totalProtein += (e.protein || 0);
-            }
-        });
-        
-        document.getElementById('total-cals').textContent = totalCals;
-        document.getElementById('total-protein').textContent = totalProtein;
-        document.getElementById('water-text').textContent = `${totalWater} / ${DAILY_WATER_GOAL} ml`;
-        const waterPercentage = Math.min((totalWater / DAILY_WATER_GOAL) * 100, 100);
-        document.getElementById('water-bar').style.width = `${waterPercentage}%`;
-    }
-
-    function openModal(type, category) {
-        document.getElementById('modal-title').textContent = `記錄${category}`;
-        document.getElementById('entry-type').value = category;
-        document.getElementById('entry-content').value = '';
-        document.getElementById('entry-context').value = '';
-        document.getElementById('entry-cals').value = '';
-        document.getElementById('entry-protein').value = '';
-        const m = document.getElementById('entry-modal');
-        m.classList.remove('hidden'); 
-        setTimeout(() => { m.classList.remove('opacity-0'); document.getElementById('entry-content').focus(); }, 10);
+    function saveData() {
+        localStorage.setItem('diet_entries_v4', JSON.stringify(state.entries));
     }
 
     function closeModal(modalId) {
         const m = document.getElementById(modalId);
-        m.classList.add('opacity-0'); 
-        setTimeout(() => { m.classList.add('hidden'); }, 200);
+        m.classList.add('opacity-0');
+        setTimeout(() => m.classList.add('hidden'), 200);
     }
 
-    document.getElementById('entry-modal').addEventListener('click', (e) => { if (e.target.id === 'entry-modal') closeModal('entry-modal'); });
-    document.getElementById('data-modal').addEventListener('click', (e) => { if (e.target.id === 'data-modal') closeModal('data-modal'); });
-    document.getElementById('scale-modal').addEventListener('click', (e) => { if (e.target.id === 'scale-modal') closeModal('scale-modal'); });
-    document.getElementById('doctor-modal').addEventListener('click', (e) => { if (e.target.id === 'doctor-modal') closeModal('doctor-modal'); });
+    ['entry-modal', 'data-modal', 'scale-modal'].forEach(id => {
+        document.getElementById(id).addEventListener('click', (e) => {
+            if (e.target.id === id) closeModal(id);
+        });
+    });
 </script>
 </body>
 </html>
